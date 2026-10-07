@@ -98,13 +98,23 @@ Several document anomalies in university prospectuses required specialized parsi
 
 #### 2.1.3 Structured Database Statistics (`data/nust_facts.db`)
 
-| Table | Record Count | Schema Highlights | Primary Use Case |
-| :--- | :--- | :--- | :--- |
-| **`module_catalog`** | **2,769** | `module_code` (UNIQUE), `module_name`, `faculty`, `department`, `prerequisites` (JSON), `corequisites` (JSON) | Deterministic answering of course prerequisite chains, module naming, and faculty mappings. |
-| **`academic_calendar`** | **24** | `academic_year`, `semester`, `event_name`, `start_date`, `end_date`, `category` | High-precision resolution of test weeks, registration windows, and exam dates. |
-| **`contacts`** | **24** | `department`, `role`, `officer_name`, `email`, `telephone` | Escalation routing for faculty officers, admissions, exams, and student debt queries. |
+The deterministic database comprises **11 relational tables** and **3,490 total records** (file size: ~696 KB):
 
-*Quality Verification:* Audit confirms **0 asterisks**, **0 unbalanced parentheses**, **0 trailing colons/bullets**, and **0 malformed prerequisite strings** across all 2,769 records.
+| # | Table Name | Record Count | Schema Highlights | Primary Use Case |
+|---|:---|:---:|:---|:---|
+| 1 | **`module_catalog`** | **2,769** | `module_code` (PK), `module_name`, `faculty`, `department`, `prerequisites` (JSON), `corequisites` (JSON) | Deterministic resolution of module prerequisite chains, course names, and faculty mappings. |
+| 2 | **`exam_timetable`** | **399** | `course_code`, `course_title`, `exam_date` (YYYY-MM-DD), `session_time`, `duration_minutes`, `session_opportunity` | Exact lookup for June 2026 1st Opportunity exam dates, sessions (`08H00`, `13H00`, `18H00`), and durations. |
+| 3 | **`programmes`** | **194** | `programme_code` (PK), `programme_name`, `faculty`, `nqf_level`, `duration_years`, `minimum_points`, `admission_requirements` | Comprehensive catalog of undergraduate, honours, master, and doctoral degree offerings and admission points. |
+| 4 | **`contacts`** | **41** | `department`, `role`, `officer_name`, `email`, `telephone` | Escalation routing across faculty officers, central administrative desks, and **13 Regional & Satellite Campuses** (Gobabis, Keetmanshoop, Rundu, Walvis Bay, Lüderitz, Eenhana, etc.). |
+| 5 | **`admission_point_scale`** | **32** | `qualification_type`, `symbol_or_grade`, `points` (1–12), `description` | Official APS conversion scale across NSSCO, NSSCAS, NSSCH, Cambridge A/AS Levels, and South African NSC. |
+| 6 | **`academic_calendar`** | **24** | `academic_year`, `semester`, `event_name`, `start_date`, `end_date`, `category` | High-precision resolution of test weeks, lecture periods, recess periods, and registration deadlines. |
+| 7 | **`student_societies`** | **21** | `society_name`, `slug`, `category`, `description`, `mission`, `contact_email`, `url` | Directory of registered campus societies (academic, religious, safety, media, tech, sports) scraped directly from the official portal. |
+| 8 | **`fee_structure`** | **16** | `fee_category`, `fee_name`, `amount_nad`, `frequency`, `notes` | Administrative, registration, late penalty, exit exam, remarking, and recognition of prior learning (RPL) rates. |
+| 9 | **`fee_payment_schedule`**| **12** | `deadline_date`, `course_type`, `percentage_due`, `cancellation_credit_percentage`, `discount_percentage`, `description` | Payment installment deadlines, course cancellation refund tiers (100%, 50%, 0%), and early payment settlement discounts. |
+| 10 | **`residence_fees`** | **11** | `item_name`, `category`, `amount_nad`, `period`, `refundable`, `notes` | Hostel room tariffs (Small, Medium, Balcony, Double), breakage deposits, compulsory 50% meal levies, and dining vouchers. |
+| 11 | **`banking_details`** | **1** | `bank_name`, `account_name`, `branch_name`, `branch_code`, `account_number`, `account_type`, `reference_format`, `contact_email` | Official FNB Ausspannplatz bank account credentials, branch code, and mandatory student number payment reference format. |
+
+*Quality Verification:* Audit confirms **0 asterisks**, **0 unbalanced parentheses**, **0 trailing colons/bullets**, and **0 malformed prerequisite strings** across all 2,769 module records. Indexes exist on all frequently queried columns (`module_code`, `exam_date`, `course_code`, `programme_code`, `society_slug`, `department`).
 
 ---
 
