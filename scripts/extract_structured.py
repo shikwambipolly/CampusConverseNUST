@@ -235,7 +235,13 @@ def extract_contacts(pdf_path: str) -> List[Dict]:
         {"department": "Ongwediva Resource Centre", "role": "Resource Centre Coordinator", "officer_name": "Ms Josefina Skrywer", "email": "jskrywer@nust.na", "telephone": "+264 65 231 276"},
         {"department": "Eenhana Satellite Campus", "role": "Head of Campus", "officer_name": "Dr Lukas Shikulo / Ms Julia Kabuwanwa", "email": "lshikulo@nust.na", "telephone": "+264 65 231 276"},
         {"department": "Rietfontein Satellite Campus", "role": "Acting Head", "officer_name": "Mr Menason Katjirua", "email": "mkatjirua@nust.na", "telephone": "+264 81 262 6070"},
-        {"department": "Lüderitz Satellite Campus", "role": "Campus Coordinator", "officer_name": "Ms Antoinette Wentworth", "email": "awentworth@nust.na", "telephone": "+264 63 204 077"}
+        {"department": "Lüderitz Satellite Campus", "role": "Campus Coordinator", "officer_name": "Ms Antoinette Wentworth", "email": "awentworth@nust.na", "telephone": "+264 63 204 077"},
+
+        # Student Support & Campus Life Services
+        {"department": "Library Services", "role": "Library Information & Lending Desk", "officer_name": "NUST Main Library", "email": "library@nust.na", "telephone": "+264 61 207 2022"},
+        {"department": "Student Health Services", "role": "Campus Health Clinic", "officer_name": "Health Services Nurse", "email": "healthservices@nust.na", "telephone": "+264 61 207 2165"},
+        {"department": "Student Counselling & Mental Health", "role": "Student Counsellor", "officer_name": "Student Counsellor", "email": "counselling@nust.na", "telephone": "+264 61 207 2270"},
+        {"department": "Department of Student Services", "role": "Director of Student Services", "officer_name": "Dr Donovan Zealand", "email": "dss@nust.na", "telephone": "+264 61 207 2165"}
     ]
 
     if not os.path.exists(pdf_path):

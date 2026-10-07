@@ -98,14 +98,14 @@ Several document anomalies in university prospectuses required specialized parsi
 
 #### 2.1.3 Structured Database Statistics (`data/nust_facts.db`)
 
-The deterministic database comprises **11 relational tables** and **3,490 total records** (file size: ~696 KB):
+The deterministic database comprises **11 relational tables** and **3,494 total records** (file size: ~696 KB):
 
 | # | Table Name | Record Count | Schema Highlights | Primary Use Case |
 |---|:---|:---:|:---|:---|
 | 1 | **`module_catalog`** | **2,769** | `module_code` (PK), `module_name`, `faculty`, `department`, `prerequisites` (JSON), `corequisites` (JSON) | Deterministic resolution of module prerequisite chains, course names, and faculty mappings. |
 | 2 | **`exam_timetable`** | **399** | `course_code`, `course_title`, `exam_date` (YYYY-MM-DD), `session_time`, `duration_minutes`, `session_opportunity` | Exact lookup for June 2026 1st Opportunity exam dates, sessions (`08H00`, `13H00`, `18H00`), and durations. |
 | 3 | **`programmes`** | **194** | `programme_code` (PK), `programme_name`, `faculty`, `nqf_level`, `duration_years`, `minimum_points`, `admission_requirements` | Comprehensive catalog of undergraduate, honours, master, and doctoral degree offerings and admission points. |
-| 4 | **`contacts`** | **41** | `department`, `role`, `officer_name`, `email`, `telephone` | Escalation routing across faculty officers, central administrative desks, and **13 Regional & Satellite Campuses** (Gobabis, Keetmanshoop, Rundu, Walvis Bay, Lüderitz, Eenhana, etc.). |
+| 4 | **`contacts`** | **45** | `department`, `role`, `officer_name`, `email`, `telephone` | Escalation routing across faculty officers, central administrative desks, student support facilities (Library, Campus Health Clinic, Counselling, DSS), and **13 Regional & Satellite Campuses** (Gobabis, Keetmanshoop, Rundu, Walvis Bay, Lüderitz, Eenhana, etc.). |
 | 5 | **`admission_point_scale`** | **32** | `qualification_type`, `symbol_or_grade`, `points` (1–12), `description` | Official APS conversion scale across NSSCO, NSSCAS, NSSCH, Cambridge A/AS Levels, and South African NSC. |
 | 6 | **`academic_calendar`** | **24** | `academic_year`, `semester`, `event_name`, `start_date`, `end_date`, `category` | High-precision resolution of test weeks, lecture periods, recess periods, and registration deadlines. |
 | 7 | **`student_societies`** | **21** | `society_name`, `slug`, `category`, `description`, `mission`, `contact_email`, `url` | Directory of registered campus societies (academic, religious, safety, media, tech, sports) scraped directly from the official portal. |
@@ -119,7 +119,53 @@ The deterministic database comprises **11 relational tables** and **3,490 total 
 ---
 
 ### 2.2 Unstructured Text Extraction for RAG (Stage 2B)
-*(Pending)*
+
+Stage 2B extracts, cleans, and segments continuous institutional policy narratives, academic regulations, disciplinary codes, and procedures into tokenized semantic chunks for the Hybrid RAG engine.
+
+#### 2.2.1 Extraction & Pre-Chunking Cleaning Protocol
+Executed via `scripts/extract_unstructured.py`:
+1. **Running Artifact Elimination:** Systematically strips running headers (*"General Information and Regulations 2026"*, *"Namibia University of Science and Technology"*), footers, standalone page pagination (`[ 42 ]`, `Page 12 of 100`), and dense Table of Contents leader lines (`.....`).
+2. **Tabular Exclusion:** Detects high-density course curriculum pages in faculty prospectuses (`> 8` module codes on a single page) and skips them to avoid polluting narrative policy retrieval with raw tabular listings already indexed deterministically in SQLite.
+3. **Dynamic Hierarchical Section Tracking:** Recursively tracks regulatory clause prefixes (e.g., `AC4 ATTENDANCE OF LECTURES`, `AC5 EVALUATION AND EXAMINATION`, `G14 ISSUING OF DOCUMENTS`, `SR1 RULES AND CONDUCT`, `F.1.3 PAYMENT REQUIREMENTS`) to enrich metadata and ensure passages remain context-grounded.
+
+#### 2.2.2 Chunking Strategy & Schema
+Adhering to Section 2.2 of the project specification:
+* **Algorithm:** Recursive Character Splitting preserving structural paragraph breaks and sentence boundaries using delimiter priority `["\n\n", "\n", ". ", "? ", "! ", "; ", ", ", " "]`.
+* **Target Chunk Size:** 400 tokens (~1,600 characters).
+* **Chunk Overlap:** 50 tokens (~200 characters) to preserve contextual coherence across clause transitions.
+* **Minimum Chunk Length:** 100 characters (discards trivial trailing fragment noise).
+* **Destination:** `data/chunks/corpus_chunks.json` (2.6 MB).
+
+Each chunk strictly adheres to the schema:
+```json
+{
+  "chunk_id": "GEN_REG_P14_C2",
+  "source_document": "2026_GENERAL_INFORMATION_AND_REGULATIONS.pdf",
+  "section_title": "AC4 Attendance Of Lectures",
+  "page_number": 14,
+  "faculty": "Institutional / General",
+  "approx_tokens": 182,
+  "text": "AC4.1 Attendance Requirements: A student registered for a course is required to attend all lectures, tutorials, and practicals. A student must achieve a minimum of 80% attendance to be eligible for continuous assessment and examinations..."
+}
+```
+
+#### 2.2.3 Unstructured Corpus Analytics
+
+The extracted corpus contains **1,745 high-quality semantic chunks** totaling **325,679 tokens** (~1.30 MB text) across **35 source documents and official campus portals**:
+
+| Document Category | Source Document / Source Name | Chunks | Key Policy & Domain Coverage |
+| :--- | :--- | :---: | :--- |
+| **Core Academic Regulations & Strategic Plan** | `2026_GENERAL_INFORMATION_AND_REGULATIONS.pdf`<br>`Final_NUST_Re-aligned_and_Reviewed_Strategic_Plan_2021-2025_0723.pdf` | **264** | 80% lecture attendance requirement, 40% examination subminimum, 50% course pass mark, 75% distinction threshold, academic exclusion, student disciplinary code, institutional mission and strategic priorities. |
+| **Faculty Prospectuses** | `2026-FEBE-PROSPECTUS.pdf`<br>`FCHSE_Prospectus_2026.pdf`<br>`FHNRAS-Prospectus-2025.pdf`<br>`2026_Prospectus_FCI.pdf`<br>`Prospectus_HP-GSB_2026.pdf` | **1,101** | Faculty-specific progression rules, work-integrated learning (WIL) prerequisites, degree completion roadmaps, and departmental evaluation criteria across all 5 faculties. |
+| **Admissions & Application Schemes** | `Guide_to_Prospective_Students_2027.pdf`<br>`2027_eMature_Age_Application_Form.pdf`<br>`2027_eUndergraduate_Application_Form.pdf`<br>`2027-ePostGraduate_Application_Form.pdf`<br>`2027_eAdvanced_Standing_Application_Form.pdf`<br>`2027-Pocket-Guide-Postgraduate.pdf`<br>`Brochure_STEMProgrammes_20223.pdf`<br>`Notice-current_and_prospective-students.pdf` | **149** | Mature Age Entry (25+ age requirement, experience, English & Math test rules), Advanced Standing credit transfers (UNAM/IUM articulation), undergraduate/postgraduate application checklists, and STEM offerings. |
+| **Student Administration & Resumption** | `REGISTRATION_GUIDE_2025.pdf`<br>`RESUMPTION_OF_STUDIES_APPLICATION_FORM_2024.pdf`<br>`NUST-Luderitz-Satelite-Campus-Flyer.pdf` | **37** | Step-by-step portal self-registration, student portal PIN reset, application for resumption of studies following leave of absence, and Lüderitz campus programmes. |
+| **Postgraduate Supervision & Research** | `Guidelines-for-the-Supervision-and-Examination-of-Postgraduate-Degrees.pdf`<br>`REGISTRATION-OF-RESEARCH-TOPICS.pdf` | **61** | Master and Doctoral thesis proposal submission, supervisor quotas, external examiner appointment, anti-plagiarism guidelines, and research topic registration. |
+| **Fees Policy & Student Debtors** | `NUST-Fees-Booklet-2026.pdf` (Policy Preamble pp. 1–14)<br>`CLAIMS-PROCEDURES.pdf`<br>`Revised_NUST_Refund_Form.pdf` | **20** | NSFAS student funding obligations, monthly debit order facility, SADC vs Non-SADC international student levies, fee installment rules, and tuition refund claim cutoffs. |
+| **Governance & Student Affairs** | `SRC_Constitution.pdf`<br>`Residence-Application-2027.pdf` | **48** | Student rights, campus governance, SRC executive portfolios, hostel residency conduct, dining hall rules, and breakage deposit refund conditions. |
+| **Examinations, Appeals & Clearances**| `EMC-Selections-Information-Booklet-2026.pdf`<br>`Updated-Notice-of-Expectation-to-Graduate_0.pdf`<br>`APPLICATION-FOR-REMARK-AND-RECHECK-2017.pdf`<br>`Graduation-Procedures_042026.pdf`<br>`Recognition_of_prior_learning.pdf`<br>`Exit-Examinations-Application-Form.pdf`<br>`Special-Examinations-Application-Form.pdf` | **36** | Expectation to graduate checklist (library and student accounts debt clearance), N$370 remark application window (3-day cutoff), exit exam single-course criteria, medical special exam petitions, gown hiring, and emergency medical care selections. |
+| **Student Societies & Extracurriculars**| `student_societies.json` (Live Portal Scrape) | **21** | Mission statements, executive contacts, eligibility criteria, and activities for all 21 officially registered NUST societies. |
+| **Verified Campus Support Services** | `library.nust.na` (Official Portal)<br>`2026_GENERAL_INFORMATION_AND_REGULATIONS.pdf` (Section DSS) | **2** | Official NUST Library operating hours (Mon–Fri 08:00–22:00, Sat 09:00–17:00, Sun 14:00–20:00), lending limits, overdue fines, Campus Health Clinic hours (adjacent to Shangri-La), full-time nurse, and student counselling services. |
+| **Total** | **35 Source Documents & Campus Portals** | **1,745** | **100% Institutional Asset & Campus Life Coverage** |
 
 ---
 
