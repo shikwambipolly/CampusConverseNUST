@@ -169,6 +169,44 @@ The extracted corpus contains **1,745 high-quality semantic chunks** totaling **
 
 ---
 
+### 2.3 Intent Classification Dataset (Stage 2C)
+
+Stage 2C synthesizes and partitions the gold-standard dataset of **400 annotated student utterances** across 6 system routing intents, adhering strictly to Section 2.3 of the project specification.
+
+#### 2.3.1 Stratified Splitting & Design Methodology
+Executed via `scripts/build_intent_dataset.py`:
+* **Total Volume:** Exactly 400 labeled student utterances.
+* **Stratified Splits (seed = 42):**
+  * **Train Set:** **280 samples (70.0%)** $\rightarrow$ `data/intents/train.json` (42 KB)
+  * **Validation Set:** **60 samples (15.0%)** $\rightarrow$ `data/intents/val.json` (8.9 KB)
+  * **Held-out Test Set:** **60 samples (15.0%)** $\rightarrow$ `data/intents/test.json` (9.0 KB)
+  * **Unified Dataset:** `data/intents/intent_dataset.json` (65 KB)
+* **Linguistic Diversity:** Captures authentic Namibian English campus jargon (*"supps"*, *"CASS"*, *"submin"*, *"hostel"*), abbreviations (*"FCI"*, *"FEBE"*, *"FCHSE"*), formal regulatory clauses, and out-of-domain conversational queries.
+
+#### 2.3.2 Intent Distribution & Downstream Routing Matrix
+
+| Intent Label | Total | Train (70%) | Val (15%) | Test (15%) | Architectural Target Subsystem | Example Utterance |
+| :--- | :---: | :---: | :---: | :---: | :--- | :--- |
+| **`check_calendar_date`** | **70** | 49 | 10 | 11 | SQLite `academic_calendar` & `exam_timetable` | *"When do lectures commence for Semester 1 2026?"* |
+| **`check_module_prereq`** | **75** | 53 | 11 | 11 | SQLite `module_catalog` & `programmes` | *"Can I register for DSA611S if I failed PRG510S?"* |
+| **`query_general_policy`** | **90** | 63 | 14 | 13 | Hybrid RAG Engine (`corpus_chunks.json`) | *"What is the minimum attendance required to write exams?"* |
+| **`escalate_human_contact`** | **55** | 39 | 8 | 8 | SQLite `contacts` & Escalation Handoff | *"What is the telephone number for the Rundu campus office?"* |
+| **`clarification_response`** | **50** | 34 | 8 | 8 | Multi-turn Conversational Slot Filler | *"Semester 1"* / *"Full-time mode"* |
+| **`out_of_scope`** | **60** | 42 | 9 | 9 | Guardrail / Fallback Policy Rejection | *"What is the weather like in Windhoek today?"* |
+| **Total** | **400** | **280** | **60** | **60** | **Exact Stratified Proportions** | **400 Authentic Utterances** |
+
+#### 2.3.3 Dataset Schema Example (`data/intents/intent_dataset.json`)
+```json
+{
+  "id": "UTT_0042",
+  "text": "What do I need to take Object Oriented Programming OOP611S?",
+  "intent": "check_module_prereq",
+  "split": "train"
+}
+```
+
+---
+
 ## 3. Pre-Processing
 *(Pending)*
 

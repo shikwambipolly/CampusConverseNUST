@@ -1,0 +1,25 @@
+# Byte-compiled / optimized files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Virtual environments
+.env
+.venv
+env/
+venv/
+ENV/
+
+# macOS metadata
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# Raw binary data (track metadata/manifest, ignore large PDFs)
+raw_data/*.pdf
+!raw_data/manifest.json
+
+# Temporary / Scratch
+.pytest_cache/
+.coverage
+htmlcov/

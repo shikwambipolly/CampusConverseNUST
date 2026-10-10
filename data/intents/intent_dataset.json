@@ -1,0 +1,2424 @@
+{
+  "metadata": {
+    "total_samples": 400,
+    "train_samples": 280,
+    "val_samples": 60,
+    "test_samples": 60,
+    "intents": [
+      "check_calendar_date",
+      "check_module_prereq",
+      "query_general_policy",
+      "escalate_human_contact",
+      "clarification_response",
+      "out_of_scope"
+    ],
+    "split_ratio": {
+      "train": 0.7,
+      "val": 0.15,
+      "test": 0.15
+    },
+    "random_seed": 42
+  },
+  "data": [
+    {
+      "id": "UTT_0311",
+      "text": "June exam session",
+      "intent": "clarification_response",
+      "split": "train"
+    },
+    {
+      "id": "UTT_0278",
+      "text": "Faculty officer telephone extension for engineering",
+      "intent": "escalate_human_contact",
+      "split": "val"
+    },
+    {
+      "id": "UTT_0248",
+      "text": "I need to speak to someone at the Katima Mulilo regional centre",
+      "intent": "escalate_human_contact",
+      "split": "train"
+    },
+    {
+      "id": "UTT_0151",
+      "text": "What is the procedure to appeal a disciplinary committee decision?",
+      "intent": "query_general_policy",
+      "split": "train"
+    },
+    {
+      "id": "UTT_0093",
+      "text": "Check prerequisites for module SWE711S",
+      "intent": "check_module_prereq",
+      "split": "train"
+    },
+    {
+      "id": "UTT_0213",
+      "text": "Are international students required to pay an additional levy?",
+      "intent": "query_general_policy",
+      "split": "val"
+    },
+    {
+      "id": "UTT_0188",
+      "text": "What are the payment deadlines for semester tuition fees?",
+      "intent": "query_general_policy",
+      "split": "train"
+    },
+    {
+      "id": "UTT_0255",
+      "text": "How do I contact the Gobabis regional coordinator?",
+      "intent": "escalate_human_contact",
+      "split": "train"
+    },
+    {
+      "id": "UTT_0252",
+      "text": "Provide phone numbers for all regional campus coordinators",
+      "intent": "escalate_human_contact",
+      "split": "train"
+    },
+    {
+      "id": "UTT_0181",
+      "text": "Are pets allowed in the student residences?",
+      "intent": "query_general_policy",
+      "split": "train"
+    },
+    {
+      "id": "UTT_0203",
+      "text": "What are the opening hours of the NUST main library?",
+      "intent": "query_general_policy",
+      "split": "train"
+    },
+    {
+      "id": "UTT_0220",
+      "text": "What is the N+2 rule for degree completion?",
+      "intent": "query_general_policy",
+      "split": "val"
+    },
+    {
+      "id": "UTT_0068",
+      "text": "Date for late registration penalty enforcement",
+      "intent": "check_calendar_date",
+      "split": "test"
+    },
+    {
+      "id": "UTT_0025",
+      "text": "When do hostel residences close for the mid-year break?",
+      "intent": "check_calendar_date",
+      "split": "train"
+    },
+    {
+      "id": "UTT_0302",
+      "text": "Namibian citizen",
+      "intent": "clarification_response",
+      "split": "train"
+    },
+    {
+      "id": "UTT_0293",
+      "text": "Windhoek main campus",
+      "intent": "clarification_response",
+      "split": "train"
+    },
+    {
+      "id": "UTT_0376",
+      "text": "What is the formula for Einstein's theory of relativity?",
+      "intent": "out_of_scope",
+      "split": "train"
+    },
+    {
+      "id": "UTT_0065",
+      "text": "When is the deadline for thesis submission for postgrads in 2026?",
+      "intent": "check_calendar_date",
+      "split": "test"
+    },
+    {
+      "id": "UTT_0235",
+      "text": "What are the requirements for emergency medical care program selection?",
+      "intent": "query_general_policy",
+      "split": "test"
+    },
+    {
+      "id": "UTT_0052",
+      "text": "Check academic calendar for term start and end dates",
+      "intent": "check_calendar_date",
+      "split": "val"
+    },
+    {
+      "id": "UTT_0242",
+      "text": "How do I reach the Examinations Department desk?",
+      "intent": "escalate_human_contact",
+      "split": "train"
+    },
+    {
+      "id": "UTT_0069",
+      "text": "Dates for the April student recess 2026",
+      "intent": "check_calendar_date",
+      "split": "test"
+    },
+    {
+      "id": "UTT_0072",
+      "text": "What are the prerequisites for Data Structures and Algorithms DSA611S?",
+      "intent": "check_module_prereq",
+      "split": "train"
+    },
+    {
+      "id": "UTT_0253",
+      "text": "Contact details for the Land and Property Sciences student society",
+      "intent": "escalate_human_contact",
+      "split": "train"
+    },
+    {
+      "id": "UTT_0118",
+      "text": "What modules do I need before taking Supply Chain Management?",
+      "intent": "check_module_prereq",
+      "split": "train"
+    },
+    {
+      "id": "UTT_0204",
+      "text": "How many books can an undergraduate student borrow from the library?",
+      "intent": "query_general_policy",
+      "split": "train"
+    },
+    {
+      "id": "UTT_0271",
+      "text": "Who do I speak to regarding postgraduate scholarship applications?",
+      "intent": "escalate_human_contact",
+      "split": "train"
+    },
+    {
+      "id": "UTT_0323",
+      "text": "Semester 1 only",
+      "intent": "clarification_response",
+      "split": "train"
+    },
+    {
+      "id": "UTT_0081",
+      "text": "What modules lead into Machine Learning MLG812S?",
+      "intent": "check_module_prereq",
+      "split": "train"
+    },
+    {
+      "id": "UTT_0047",
+      "text": "Graduation ceremony dates for April 2026",
+      "intent": "check_calendar_date",
+      "split": "train"
+    },
+    {
+      "id": "UTT_0089",
+      "text": "What do I need to register for Human Anatomy and Physiology 2?",
+      "intent": "check_module_prereq",
+      "split": "train"
+    },
+    {
+      "id": "UTT_0132",
+      "text": "Prerequisites for Hydrology and Water Resources in civil engineering",
+      "intent": "check_module_prereq",
+      "split": "val"
+    },
+    {
+      "id": "UTT_0010",
+      "text": "When is the deadline to register research topics for master students?",
+      "intent": "check_calendar_date",
+      "split": "train"
+    },
+    {
+      "id": "UTT_0030",
+      "text": "Last day of classes for semester 2",
+      "intent": "check_calendar_date",
+      "split": "train"
+    },
+    {
+      "id": "UTT_0272",
+      "text": "Give me the email address for the Keetmanshoop centre",
+      "intent": "escalate_human_contact",
+      "split": "train"
+    },
+    {
+      "id": "UTT_0244",
+      "text": "Connect me with a human staff member please",
+      "intent": "escalate_human_contact",
+      "split": "train"
+    },
+    {
+      "id": "UTT_0160",
+      "text": "How do I apply for resumption of studies after taking a gap semester?",
+      "intent": "query_general_policy",
+      "split": "train"
+    },
+    {
+      "id": "UTT_0215",
+      "text": "Can I apply through mature age entry if I am 23 years old?",
+      "intent": "query_general_policy",
+      "split": "val"
+    },
+    {
+      "id": "UTT_0399",
+      "text": "What is the recipe for traditional Namibian potjiekos?",
+      "intent": "out_of_scope",
+      "split": "test"
+    },
+    {
+      "id": "UTT_0273",
+      "text": "I want to speak with an advisor",
+      "intent": "escalate_human_contact",
+      "split": "train"
+    },
+    {
+      "id": "UTT_0078",
+      "text": "Can I register for Soil Mechanics 2 without Geology?",
+      "intent": "check_module_prereq",
+      "split": "train"
+    },
+    {
+      "id": "UTT_0075",
+      "text": "Can I take Highway Engineering without Surveying 1?",
+      "intent": "check_module_prereq",
+      "split": "train"
+    },
+    {
+      "id": "UTT_0230",
+      "text": "What is the minimum APS admission score for engineering programmes?",
+      "intent": "query_general_policy",
+      "split": "test"
+    },
+    {
+      "id": "UTT_0225",
+      "text": "What is the academic exclusion policy at NUST?",
+      "intent": "query_general_policy",
+      "split": "test"
+    },
+    {
+      "id": "UTT_0300",
+      "text": "Health sciences",
+      "intent": "clarification_response",
+      "split": "train"
+    },
+    {
+      "id": "UTT_0259",
+      "text": "Phone number for the Walvis Bay regional campus",
+      "intent": "escalate_human_contact",
+      "split": "train"
+    },
+    {
+      "id": "UTT_0274",
+      "text": "Contact information for work integrated learning office",
+      "intent": "escalate_human_contact",
+      "split": "train"
+    },
+    {
+      "id": "UTT_0373",
+      "text": "Do you believe in ghosts?",
+      "intent": "out_of_scope",
+      "split": "train"
+    },
+    {
+      "id": "UTT_0149",
+      "text": "How does the Cambridge A level grade convert to NUST admission points?",
+      "intent": "query_general_policy",
+      "split": "train"
+    },
+    {
+      "id": "UTT_0037",
+      "text": "When is the last day to add or drop courses without penalty in semester 1?",
+      "intent": "check_calendar_date",
+      "split": "train"
+    },
+    {
+      "id": "UTT_0389",
+      "text": "What is the distance from Earth to Mars?",
+      "intent": "out_of_scope",
+      "split": "val"
+    },
+    {
+      "id": "UTT_0390",
+      "text": "What time is it in Tokyo right now?",
+      "intent": "out_of_scope",
+      "split": "val"
+    },
+    {
+      "id": "UTT_0367",
+      "text": "How do I make a paper airplane fly far?",
+      "intent": "out_of_scope",
+      "split": "train"
+    },
+    {
+      "id": "UTT_0340",
+      "text": "Semester 1",
+      "intent": "clarification_response",
+      "split": "test"
+    },
+    {
+      "id": "UTT_0335",
+      "text": "Yes",
+      "intent": "clarification_response",
+      "split": "test"
+    },
+    {
+      "id": "UTT_0295",
+      "text": "NSSCO level",
+      "intent": "clarification_response",
+      "split": "train"
+    },
+    {
+      "id": "UTT_0095",
+      "text": "Prerequisites for Urban Planning Theory in FEBE",
+      "intent": "check_module_prereq",
+      "split": "train"
+    },
+    {
+      "id": "UTT_0309",
+      "text": "Honours degree",
+      "intent": "clarification_response",
+      "split": "train"
+    },
+    {
+      "id": "UTT_0192",
+      "text": "What is the pass mark for a semester course at NUST?",
+      "intent": "query_general_policy",
+      "split": "train"
+    },
+    {
+      "id": "UTT_0102",
+      "text": "What do I need before taking Cyber Security Governance?",
+      "intent": "check_module_prereq",
+      "split": "train"
+    },
+    {
+      "id": "UTT_0094",
+      "text": "What do I need to take Investment Analysis?",
+      "intent": "check_module_prereq",
+      "split": "train"
+    },
+    {
+      "id": "UTT_0229",
+      "text": "What happens if I don't pay my student account by the due date?",
+      "intent": "query_general_policy",
+      "split": "test"
+    },
+    {
+      "id": "UTT_0381",
+      "text": "Write a short story about a dragon in the desert",
+      "intent": "out_of_scope",
+      "split": "train"
+    },
+    {
+      "id": "UTT_0174",
+      "text": "What percentage qualifies for a pass with distinction?",
+      "intent": "query_general_policy",
+      "split": "train"
+    },
+    {
+      "id": "UTT_0126",
+      "text": "What do I need to register for Electrical Machines 1?",
+      "intent": "check_module_prereq",
+      "split": "val"
+    },
+    {
+      "id": "UTT_0238",
+      "text": "Give me the contact person for hostel accommodation queries",
+      "intent": "escalate_human_contact",
+      "split": "train"
+    },
+    {
+      "id": "UTT_0231",
+      "text": "What is the hostel curfew time for residential halls?",
+      "intent": "query_general_policy",
+      "split": "test"
+    },
+    {
+      "id": "UTT_0088",
+      "text": "What modules do I need to complete before Land Law 1?",
+      "intent": "check_module_prereq",
+      "split": "train"
+    },
+    {
+      "id": "UTT_0014",
+      "text": "When do first semester exam results come out?",
+      "intent": "check_calendar_date",
+      "split": "train"
+    },
+    {
+      "id": "UTT_0166",
+      "text": "What are the hostel rules for Shangri-La, Monresa, and Höpker residences?",
+      "intent": "query_general_policy",
+      "split": "train"
+    },
+    {
+      "id": "UTT_0321",
+      "text": "Yes that is correct",
+      "intent": "clarification_response",
+      "split": "train"
+    },
+    {
+      "id": "UTT_0079",
+      "text": "Can I enroll in Mining Geology without Physical Geology?",
+      "intent": "check_module_prereq",
+      "split": "train"
+    },
+    {
+      "id": "UTT_0368",
+      "text": "Translate this sentence to French for me",
+      "intent": "out_of_scope",
+      "split": "train"
+    },
+    {
+      "id": "UTT_0257",
+      "text": "Who is the SRC President and how do I contact them?",
+      "intent": "escalate_human_contact",
+      "split": "train"
+    },
+    {
+      "id": "UTT_0294",
+      "text": "Lüderitz campus",
+      "intent": "clarification_response",
+      "split": "train"
+    },
+    {
+      "id": "UTT_0189",
+      "text": "What is the refund policy if I cancel my registration?",
+      "intent": "query_general_policy",
+      "split": "train"
+    },
+    {
+      "id": "UTT_0277",
+      "text": "Give me the phone number for international student support",
+      "intent": "escalate_human_contact",
+      "split": "val"
+    },
+    {
+      "id": "UTT_0124",
+      "text": "What do I need to register for Embedded Systems 1?",
+      "intent": "check_module_prereq",
+      "split": "val"
+    },
+    {
+      "id": "UTT_0355",
+      "text": "How do I learn how to swim?",
+      "intent": "out_of_scope",
+      "split": "train"
+    },
+    {
+      "id": "UTT_0167",
+      "text": "What happens if I miss more than 20% of classes?",
+      "intent": "query_general_policy",
+      "split": "train"
+    },
+    {
+      "id": "UTT_0186",
+      "text": "How much is the breakage deposit for on-campus hostel accommodation?",
+      "intent": "query_general_policy",
+      "split": "train"
+    },
+    {
+      "id": "UTT_0031",
+      "text": "Date for commencement of supplementary exams in July",
+      "intent": "check_calendar_date",
+      "split": "train"
+    },
+    {
+      "id": "UTT_0178",
+      "text": "What are the requirements for submitting a doctoral dissertation?",
+      "intent": "query_general_policy",
+      "split": "train"
+    },
+    {
+      "id": "UTT_0254",
+      "text": "I need help from a human officer regarding my timetable clash",
+      "intent": "escalate_human_contact",
+      "split": "train"
+    },
+    {
+      "id": "UTT_0106",
+      "text": "Can I take Structural Steel Design without Structural Analysis 2?",
+      "intent": "check_module_prereq",
+      "split": "train"
+    },
+    {
+      "id": "UTT_0026",
+      "text": "Check date for April graduation session",
+      "intent": "check_calendar_date",
+      "split": "train"
+    },
+    {
+      "id": "UTT_0284",
+      "text": "Can I talk to a real person from admissions?",
+      "intent": "escalate_human_contact",
+      "split": "test"
+    },
+    {
+      "id": "UTT_0374",
+      "text": "Can you help me design a fashion outfit?",
+      "intent": "out_of_scope",
+      "split": "train"
+    },
+    {
+      "id": "UTT_0281",
+      "text": "How do I contact the Admissions Office directly?",
+      "intent": "escalate_human_contact",
+      "split": "val"
+    },
+    {
+      "id": "UTT_0315",
+      "text": "Semester 2",
+      "intent": "clarification_response",
+      "split": "train"
+    },
+    {
+      "id": "UTT_0009",
+      "text": "Is the university open on Cassinga Day?",
+      "intent": "check_calendar_date",
+      "split": "train"
+    },
+    {
+      "id": "UTT_0352",
+      "text": "Can you write an essay about climate change for high school?",
+      "intent": "out_of_scope",
+      "split": "train"
+    },
+    {
+      "id": "UTT_0029",
+      "text": "When do part-time evening lectures start?",
+      "intent": "check_calendar_date",
+      "split": "train"
+    },
+    {
+      "id": "UTT_0045",
+      "text": "What day does the semester 2 recess end?",
+      "intent": "check_calendar_date",
+      "split": "train"
+    },
+    {
+      "id": "UTT_0199",
+      "text": "What is the official policy on lecture attendance?",
+      "intent": "query_general_policy",
+      "split": "train"
+    },
+    {
+      "id": "UTT_0384",
+      "text": "Can you teach me conversational German?",
+      "intent": "out_of_scope",
+      "split": "val"
+    },
+    {
+      "id": "UTT_0096",
+      "text": "What is required to register for Honours Research Project in FCI?",
+      "intent": "check_module_prereq",
+      "split": "train"
+    },
+    {
+      "id": "UTT_0003",
+      "text": "When is the June 2026 examination period?",
+      "intent": "check_calendar_date",
+      "split": "train"
+    },
+    {
+      "id": "UTT_0176",
+      "text": "How many times can I repeat a failed module before being excluded?",
+      "intent": "query_general_policy",
+      "split": "train"
+    },
+    {
+      "id": "UTT_0256",
+      "text": "Email address for academic appeals committee secretary",
+      "intent": "escalate_human_contact",
+      "split": "train"
+    },
+    {
+      "id": "UTT_0400",
+      "text": "What is the highest mountain in Namibia?",
+      "intent": "out_of_scope",
+      "split": "test"
+    },
+    {
+      "id": "UTT_0054",
+      "text": "Date of semester 2 test week 2026",
+      "intent": "check_calendar_date",
+      "split": "val"
+    },
+    {
+      "id": "UTT_0097",
+      "text": "What modules do I need to pass before registering for Auditing 2?",
+      "intent": "check_module_prereq",
+      "split": "train"
+    },
+    {
+      "id": "UTT_0290",
+      "text": "Who is the faculty officer for Computing and Informatics?",
+      "intent": "escalate_human_contact",
+      "split": "test"
+    },
+    {
+      "id": "UTT_0345",
+      "text": "Can you write a resume for a marketing job in London?",
+      "intent": "out_of_scope",
+      "split": "train"
+    },
+    {
+      "id": "UTT_0202",
+      "text": "Which bank account should I deposit my registration fee into?",
+      "intent": "query_general_policy",
+      "split": "train"
+    },
+    {
+      "id": "UTT_0286",
+      "text": "How do I reach the IT Helpdesk for portal login problems?",
+      "intent": "escalate_human_contact",
+      "split": "test"
+    },
+    {
+      "id": "UTT_0232",
+      "text": "What disciplinary action is taken for cheating in a test or exam?",
+      "intent": "query_general_policy",
+      "split": "test"
+    },
+    {
+      "id": "UTT_0059",
+      "text": "What is the date for the mid-semester test week?",
+      "intent": "check_calendar_date",
+      "split": "val"
+    },
+    {
+      "id": "UTT_0222",
+      "text": "What are the hostel residence rules regarding visitors?",
+      "intent": "query_general_policy",
+      "split": "val"
+    },
+    {
+      "id": "UTT_0042",
+      "text": "When is the deadline to appeal continuous assessment marks?",
+      "intent": "check_calendar_date",
+      "split": "train"
+    },
+    {
+      "id": "UTT_0049",
+      "text": "Check calendar for exam opportunity dates",
+      "intent": "check_calendar_date",
+      "split": "train"
+    },
+    {
+      "id": "UTT_0034",
+      "text": "When does term 1 end?",
+      "intent": "check_calendar_date",
+      "split": "train"
+    },
+    {
+      "id": "UTT_0344",
+      "text": "What is the deepest ocean trench?",
+      "intent": "out_of_scope",
+      "split": "train"
+    },
+    {
+      "id": "UTT_0024",
+      "text": "When does late registration end for semester 2?",
+      "intent": "check_calendar_date",
+      "split": "train"
+    },
+    {
+      "id": "UTT_0228",
+      "text": "Explain the NUST code of conduct for student behavior",
+      "intent": "query_general_policy",
+      "split": "test"
+    },
+    {
+      "id": "UTT_0111",
+      "text": "What are the prerequisites for Environmental Law in natural resources?",
+      "intent": "check_module_prereq",
+      "split": "train"
+    },
+    {
+      "id": "UTT_0018",
+      "text": "When are the SRC election dates held?",
+      "intent": "check_calendar_date",
+      "split": "train"
+    },
+    {
+      "id": "UTT_0268",
+      "text": "Email address to submit proof of payment to student debtors",
+      "intent": "escalate_human_contact",
+      "split": "train"
+    },
+    {
+      "id": "UTT_0388",
+      "text": "How do I bake chocolate chip cookies from scratch?",
+      "intent": "out_of_scope",
+      "split": "val"
+    },
+    {
+      "id": "UTT_0011",
+      "text": "Tell me the exact dates for semester 1 recess",
+      "intent": "check_calendar_date",
+      "split": "train"
+    },
+    {
+      "id": "UTT_0004",
+      "text": "When is the final date for submission of continuous assessment marks?",
+      "intent": "check_calendar_date",
+      "split": "train"
+    },
+    {
+      "id": "UTT_0358",
+      "text": "Tell me horoscope for Pisces today",
+      "intent": "out_of_scope",
+      "split": "train"
+    },
+    {
+      "id": "UTT_0073",
+      "text": "Can I enroll in Advanced Database Systems ADB711S without Database Systems DBS611S?",
+      "intent": "check_module_prereq",
+      "split": "train"
+    },
+    {
+      "id": "UTT_0371",
+      "text": "Who was the first president of the United States?",
+      "intent": "out_of_scope",
+      "split": "train"
+    },
+    {
+      "id": "UTT_0251",
+      "text": "What is the telephone number for the Rundu campus office?",
+      "intent": "escalate_human_contact",
+      "split": "train"
+    },
+    {
+      "id": "UTT_0356",
+      "text": "How many countries are there in Africa?",
+      "intent": "out_of_scope",
+      "split": "train"
+    },
+    {
+      "id": "UTT_0249",
+      "text": "Email for the NUST Accounting Society",
+      "intent": "escalate_human_contact",
+      "split": "train"
+    },
+    {
+      "id": "UTT_0033",
+      "text": "What is the registration deadline for new students?",
+      "intent": "check_calendar_date",
+      "split": "train"
+    },
+    {
+      "id": "UTT_0285",
+      "text": "How do I reach the sports and culture department?",
+      "intent": "escalate_human_contact",
+      "split": "test"
+    },
+    {
+      "id": "UTT_0043",
+      "text": "Dates for November 2026 final exams",
+      "intent": "check_calendar_date",
+      "split": "train"
+    },
+    {
+      "id": "UTT_0104",
+      "text": "What modules are required before doing Work-Integrated Learning WIL711S?",
+      "intent": "check_module_prereq",
+      "split": "train"
+    },
+    {
+      "id": "UTT_0322",
+      "text": "Katima Mulilo",
+      "intent": "clarification_response",
+      "split": "train"
+    },
+    {
+      "id": "UTT_0145",
+      "text": "What do I need to take Structural Analysis 1 STA611S?",
+      "intent": "check_module_prereq",
+      "split": "test"
+    },
+    {
+      "id": "UTT_0008",
+      "text": "When does hostel move-in begin for first years?",
+      "intent": "check_calendar_date",
+      "split": "train"
+    },
+    {
+      "id": "UTT_0395",
+      "text": "How do I hack a Wi-Fi password?",
+      "intent": "out_of_scope",
+      "split": "test"
+    },
+    {
+      "id": "UTT_0112",
+      "text": "Prerequisites for Fluid Mechanics FLM621S in engineering",
+      "intent": "check_module_prereq",
+      "split": "train"
+    },
+    {
+      "id": "UTT_0175",
+      "text": "How do I get academic clearance for graduation?",
+      "intent": "query_general_policy",
+      "split": "train"
+    },
+    {
+      "id": "UTT_0314",
+      "text": "OOP611S",
+      "intent": "clarification_response",
+      "split": "train"
+    },
+    {
+      "id": "UTT_0183",
+      "text": "What is the fee for a duplicate degree certificate?",
+      "intent": "query_general_policy",
+      "split": "train"
+    },
+    {
+      "id": "UTT_0383",
+      "text": "Can you do my history homework for me?",
+      "intent": "out_of_scope",
+      "split": "val"
+    },
+    {
+      "id": "UTT_0140",
+      "text": "What are the prerequisites for Operating Systems OPS612S?",
+      "intent": "check_module_prereq",
+      "split": "test"
+    },
+    {
+      "id": "UTT_0138",
+      "text": "What modules do I need to pass before doing the MBA dissertation?",
+      "intent": "check_module_prereq",
+      "split": "test"
+    },
+    {
+      "id": "UTT_0320",
+      "text": "Master of Science in Information Technology",
+      "intent": "clarification_response",
+      "split": "train"
+    },
+    {
+      "id": "UTT_0357",
+      "text": "Recommend a book on psychology",
+      "intent": "out_of_scope",
+      "split": "train"
+    },
+    {
+      "id": "UTT_0377",
+      "text": "How do solar panels work?",
+      "intent": "out_of_scope",
+      "split": "train"
+    },
+    {
+      "id": "UTT_0351",
+      "text": "Who is your favorite football player?",
+      "intent": "out_of_scope",
+      "split": "train"
+    },
+    {
+      "id": "UTT_0226",
+      "text": "What are the library operating hours during student vacations?",
+      "intent": "query_general_policy",
+      "split": "test"
+    },
+    {
+      "id": "UTT_0123",
+      "text": "What are the prerequisites for Engineering Mathematics 2?",
+      "intent": "check_module_prereq",
+      "split": "train"
+    },
+    {
+      "id": "UTT_0301",
+      "text": "Yes, semester 1 please",
+      "intent": "clarification_response",
+      "split": "train"
+    },
+    {
+      "id": "UTT_0237",
+      "text": "How do I contact the Student Counsellor?",
+      "intent": "escalate_human_contact",
+      "split": "train"
+    },
+    {
+      "id": "UTT_0006",
+      "text": "What date is the commencement of second semester lectures?",
+      "intent": "check_calendar_date",
+      "split": "train"
+    },
+    {
+      "id": "UTT_0150",
+      "text": "What reference must I use when making a bank transfer to NUST?",
+      "intent": "query_general_policy",
+      "split": "train"
+    },
+    {
+      "id": "UTT_0100",
+      "text": "Prerequisites for Logistics Management 2",
+      "intent": "check_module_prereq",
+      "split": "train"
+    },
+    {
+      "id": "UTT_0270",
+      "text": "Phone extension for the graduation office",
+      "intent": "escalate_human_contact",
+      "split": "train"
+    },
+    {
+      "id": "UTT_0359",
+      "text": "Tell me a funny joke",
+      "intent": "out_of_scope",
+      "split": "train"
+    },
+    {
+      "id": "UTT_0016",
+      "text": "When do end-of-year examinations start?",
+      "intent": "check_calendar_date",
+      "split": "train"
+    },
+    {
+      "id": "UTT_0163",
+      "text": "Will I get my remarking fee refunded if my mark increases?",
+      "intent": "query_general_policy",
+      "split": "train"
+    },
+    {
+      "id": "UTT_0120",
+      "text": "Prerequisites for Translation Theory and Practice",
+      "intent": "check_module_prereq",
+      "split": "train"
+    },
+    {
+      "id": "UTT_0258",
+      "text": "I want to speak with someone from student affairs",
+      "intent": "escalate_human_contact",
+      "split": "train"
+    },
+    {
+      "id": "UTT_0085",
+      "text": "Can I take Cost and Management Accounting 2 without CMA 1?",
+      "intent": "check_module_prereq",
+      "split": "train"
+    },
+    {
+      "id": "UTT_0105",
+      "text": "Requirements to take Renewable Energy Systems in mechanical engineering",
+      "intent": "check_module_prereq",
+      "split": "train"
+    },
+    {
+      "id": "UTT_0240",
+      "text": "What is the telephone number for the campus health clinic?",
+      "intent": "escalate_human_contact",
+      "split": "train"
+    },
+    {
+      "id": "UTT_0017",
+      "text": "When is the 50% tuition fee credit deadline for semester 2?",
+      "intent": "check_calendar_date",
+      "split": "train"
+    },
+    {
+      "id": "UTT_0055",
+      "text": "What is the start date of Semester 2 classes?",
+      "intent": "check_calendar_date",
+      "split": "val"
+    },
+    {
+      "id": "UTT_0040",
+      "text": "What is the date for Ascension Day holiday?",
+      "intent": "check_calendar_date",
+      "split": "train"
+    },
+    {
+      "id": "UTT_0233",
+      "text": "What is the required mark to achieve a pass with distinction at NUST?",
+      "intent": "query_general_policy",
+      "split": "test"
+    },
+    {
+      "id": "UTT_0304",
+      "text": "Final year student",
+      "intent": "clarification_response",
+      "split": "train"
+    },
+    {
+      "id": "UTT_0379",
+      "text": "Teach me how to play guitar chords",
+      "intent": "out_of_scope",
+      "split": "train"
+    },
+    {
+      "id": "UTT_0291",
+      "text": "November exams",
+      "intent": "clarification_response",
+      "split": "train"
+    },
+    {
+      "id": "UTT_0365",
+      "text": "How do airplanes stay in the air?",
+      "intent": "out_of_scope",
+      "split": "train"
+    },
+    {
+      "id": "UTT_0139",
+      "text": "Prerequisites for Journalism Practice 2 in communication",
+      "intent": "check_module_prereq",
+      "split": "test"
+    },
+    {
+      "id": "UTT_0201",
+      "text": "How do I apply for a refund of excess credit balance on my student account?",
+      "intent": "query_general_policy",
+      "split": "train"
+    },
+    {
+      "id": "UTT_0086",
+      "text": "Can I register for DSA611S if I failed Programming 1 PRG510S?",
+      "intent": "check_module_prereq",
+      "split": "train"
+    },
+    {
+      "id": "UTT_0070",
+      "text": "What day does classes resume after the mid-term recess?",
+      "intent": "check_calendar_date",
+      "split": "test"
+    },
+    {
+      "id": "UTT_0061",
+      "text": "When is the deadline to submit medical certificates for missed tests?",
+      "intent": "check_calendar_date",
+      "split": "test"
+    },
+    {
+      "id": "UTT_0074",
+      "text": "What are the prerequisites for Geotechnical Engineering?",
+      "intent": "check_module_prereq",
+      "split": "train"
+    },
+    {
+      "id": "UTT_0312",
+      "text": "PRG510S",
+      "intent": "clarification_response",
+      "split": "train"
+    },
+    {
+      "id": "UTT_0113",
+      "text": "What are the corequisites for Web Development Fundamentals WDF521S?",
+      "intent": "check_module_prereq",
+      "split": "train"
+    },
+    {
+      "id": "UTT_0263",
+      "text": "Email address for the Harold Pupkewitz Graduate School of Business office",
+      "intent": "escalate_human_contact",
+      "split": "train"
+    },
+    {
+      "id": "UTT_0062",
+      "text": "When do winter classes start?",
+      "intent": "check_calendar_date",
+      "split": "test"
+    },
+    {
+      "id": "UTT_0289",
+      "text": "Who is the Superintendent for Shangri-La hostel?",
+      "intent": "escalate_human_contact",
+      "split": "test"
+    },
+    {
+      "id": "UTT_0125",
+      "text": "Prerequisites for Quantitative Methods in GSB",
+      "intent": "check_module_prereq",
+      "split": "val"
+    },
+    {
+      "id": "UTT_0316",
+      "text": "Bachelor of Computer Science",
+      "intent": "clarification_response",
+      "split": "train"
+    },
+    {
+      "id": "UTT_0071",
+      "text": "What are the prerequisites for Microeconomics 1?",
+      "intent": "check_module_prereq",
+      "split": "train"
+    },
+    {
+      "id": "UTT_0164",
+      "text": "What is the fee for a special examination due to medical reasons?",
+      "intent": "query_general_policy",
+      "split": "train"
+    },
+    {
+      "id": "UTT_0346",
+      "text": "Recommend a good sci-fi movie to watch tonight",
+      "intent": "out_of_scope",
+      "split": "train"
+    },
+    {
+      "id": "UTT_0391",
+      "text": "Where is the nearest pizza place in town?",
+      "intent": "out_of_scope",
+      "split": "val"
+    },
+    {
+      "id": "UTT_0116",
+      "text": "Can I take German 2 without German 1A?",
+      "intent": "check_module_prereq",
+      "split": "train"
+    },
+    {
+      "id": "UTT_0246",
+      "text": "Contact details for the Faculty of Health and Natural Resources",
+      "intent": "escalate_human_contact",
+      "split": "train"
+    },
+    {
+      "id": "UTT_0191",
+      "text": "What is the policy on deferring an examination to the next session?",
+      "intent": "query_general_policy",
+      "split": "train"
+    },
+    {
+      "id": "UTT_0041",
+      "text": "When does the first term lecture period officially conclude?",
+      "intent": "check_calendar_date",
+      "split": "train"
+    },
+    {
+      "id": "UTT_0331",
+      "text": "First opportunity",
+      "intent": "clarification_response",
+      "split": "val"
+    },
+    {
+      "id": "UTT_0141",
+      "text": "Is Introduction to Psychology a prerequisite for Organizational Behaviour?",
+      "intent": "check_module_prereq",
+      "split": "test"
+    },
+    {
+      "id": "UTT_0264",
+      "text": "Email address for student portal PIN reset support",
+      "intent": "escalate_human_contact",
+      "split": "train"
+    },
+    {
+      "id": "UTT_0130",
+      "text": "What are the prerequisites for Financial Accounting 1A FAC511S?",
+      "intent": "check_module_prereq",
+      "split": "val"
+    },
+    {
+      "id": "UTT_0185",
+      "text": "What mark gets you a supplementary exam?",
+      "intent": "query_general_policy",
+      "split": "train"
+    },
+    {
+      "id": "UTT_0245",
+      "text": "What is the phone number for the Office of the Registrar?",
+      "intent": "escalate_human_contact",
+      "split": "train"
+    },
+    {
+      "id": "UTT_0337",
+      "text": "Main campus",
+      "intent": "clarification_response",
+      "split": "test"
+    },
+    {
+      "id": "UTT_0194",
+      "text": "How do I set up a monthly debit order payment plan for my fees?",
+      "intent": "query_general_policy",
+      "split": "train"
+    },
+    {
+      "id": "UTT_0360",
+      "text": "Who painted the Mona Lisa?",
+      "intent": "out_of_scope",
+      "split": "train"
+    },
+    {
+      "id": "UTT_0153",
+      "text": "What is the rule on changing programmes within the university?",
+      "intent": "query_general_policy",
+      "split": "train"
+    },
+    {
+      "id": "UTT_0144",
+      "text": "What do I need before taking Broadcast Journalism?",
+      "intent": "check_module_prereq",
+      "split": "test"
+    },
+    {
+      "id": "UTT_0313",
+      "text": "Full-time",
+      "intent": "clarification_response",
+      "split": "train"
+    },
+    {
+      "id": "UTT_0347",
+      "text": "Who wrote Hamlet?",
+      "intent": "out_of_scope",
+      "split": "train"
+    },
+    {
+      "id": "UTT_0214",
+      "text": "How do I apply for a special exam if I was sick during the main exam?",
+      "intent": "query_general_policy",
+      "split": "val"
+    },
+    {
+      "id": "UTT_0396",
+      "text": "What is the stock price of Apple right now?",
+      "intent": "out_of_scope",
+      "split": "test"
+    },
+    {
+      "id": "UTT_0035",
+      "text": "Release date for June 2026 examination marks",
+      "intent": "check_calendar_date",
+      "split": "train"
+    },
+    {
+      "id": "UTT_0338",
+      "text": "No, full-time mode",
+      "intent": "clarification_response",
+      "split": "test"
+    },
+    {
+      "id": "UTT_0032",
+      "text": "What date does the academic year 2026 officially start?",
+      "intent": "check_calendar_date",
+      "split": "train"
+    },
+    {
+      "id": "UTT_0382",
+      "text": "Who invented the telephone?",
+      "intent": "out_of_scope",
+      "split": "train"
+    },
+    {
+      "id": "UTT_0324",
+      "text": "Faculty of Engineering",
+      "intent": "clarification_response",
+      "split": "train"
+    },
+    {
+      "id": "UTT_0330",
+      "text": "Computer Science",
+      "intent": "clarification_response",
+      "split": "val"
+    },
+    {
+      "id": "UTT_0119",
+      "text": "Prerequisites for Software Engineering SWE712S",
+      "intent": "check_module_prereq",
+      "split": "train"
+    },
+    {
+      "id": "UTT_0133",
+      "text": "Prerequisites for Control Systems 1 in electrical engineering",
+      "intent": "check_module_prereq",
+      "split": "val"
+    },
+    {
+      "id": "UTT_0234",
+      "text": "What are the rules and procedures for requesting an exam script remark?",
+      "intent": "query_general_policy",
+      "split": "test"
+    },
+    {
+      "id": "UTT_0206",
+      "text": "What time does the student clinic open on weekdays?",
+      "intent": "query_general_policy",
+      "split": "train"
+    },
+    {
+      "id": "UTT_0046",
+      "text": "When do re-examinations take place?",
+      "intent": "check_calendar_date",
+      "split": "train"
+    },
+    {
+      "id": "UTT_0057",
+      "text": "When is the deadline to change study mode from full-time to distance?",
+      "intent": "check_calendar_date",
+      "split": "val"
+    },
+    {
+      "id": "UTT_0109",
+      "text": "Prerequisites for Power Systems Analysis in electrical engineering",
+      "intent": "check_module_prereq",
+      "split": "train"
+    },
+    {
+      "id": "UTT_0200",
+      "text": "How much does it cost to have an exam paper remarked?",
+      "intent": "query_general_policy",
+      "split": "train"
+    },
+    {
+      "id": "UTT_0028",
+      "text": "When is the deadline for exemption application submissions in semester 1?",
+      "intent": "check_calendar_date",
+      "split": "train"
+    },
+    {
+      "id": "UTT_0303",
+      "text": "The 08H00 exam slot",
+      "intent": "clarification_response",
+      "split": "train"
+    },
+    {
+      "id": "UTT_0269",
+      "text": "Email address for the NUST Main Library reference desk",
+      "intent": "escalate_human_contact",
+      "split": "train"
+    },
+    {
+      "id": "UTT_0193",
+      "text": "What is the maximum percentage of credits that can be exempted?",
+      "intent": "query_general_policy",
+      "split": "train"
+    },
+    {
+      "id": "UTT_0393",
+      "text": "What is the speed of sound?",
+      "intent": "out_of_scope",
+      "split": "test"
+    },
+    {
+      "id": "UTT_0308",
+      "text": "Postgraduate",
+      "intent": "clarification_response",
+      "split": "train"
+    },
+    {
+      "id": "UTT_0372",
+      "text": "Tell me the latest political news in Namibia",
+      "intent": "out_of_scope",
+      "split": "train"
+    },
+    {
+      "id": "UTT_0250",
+      "text": "Who is the head of the Rietfontein satellite campus?",
+      "intent": "escalate_human_contact",
+      "split": "train"
+    },
+    {
+      "id": "UTT_0247",
+      "text": "Give me the contact details for the university cashiers desk",
+      "intent": "escalate_human_contact",
+      "split": "train"
+    },
+    {
+      "id": "UTT_0336",
+      "text": "NSSCAS level",
+      "intent": "clarification_response",
+      "split": "test"
+    },
+    {
+      "id": "UTT_0127",
+      "text": "Prerequisites for Bachelor of Computer Science capstone project",
+      "intent": "check_module_prereq",
+      "split": "val"
+    },
+    {
+      "id": "UTT_0279",
+      "text": "I need the contact details for Tsumeb regional centre",
+      "intent": "escalate_human_contact",
+      "split": "val"
+    },
+    {
+      "id": "UTT_0179",
+      "text": "How do I qualify for an exit examination?",
+      "intent": "query_general_policy",
+      "split": "train"
+    },
+    {
+      "id": "UTT_0364",
+      "text": "Can you solve this riddle for me?",
+      "intent": "out_of_scope",
+      "split": "train"
+    },
+    {
+      "id": "UTT_0050",
+      "text": "When is the first opportunity exam timetable released?",
+      "intent": "check_calendar_date",
+      "split": "val"
+    },
+    {
+      "id": "UTT_0148",
+      "text": "Who qualifies for a second opportunity or supplementary examination?",
+      "intent": "query_general_policy",
+      "split": "train"
+    },
+    {
+      "id": "UTT_0162",
+      "text": "How do I request an official academic transcript or proof of registration?",
+      "intent": "query_general_policy",
+      "split": "train"
+    },
+    {
+      "id": "UTT_0265",
+      "text": "Who can I email about my registration hold?",
+      "intent": "escalate_human_contact",
+      "split": "train"
+    },
+    {
+      "id": "UTT_0107",
+      "text": "Prerequisites for Corporate Finance 1 in business school",
+      "intent": "check_module_prereq",
+      "split": "train"
+    },
+    {
+      "id": "UTT_0332",
+      "text": "Rundu centre",
+      "intent": "clarification_response",
+      "split": "val"
+    },
+    {
+      "id": "UTT_0375",
+      "text": "Write an apology message to my friend",
+      "intent": "out_of_scope",
+      "split": "train"
+    },
+    {
+      "id": "UTT_0197",
+      "text": "Can I cook inside my hostel bedroom?",
+      "intent": "query_general_policy",
+      "split": "train"
+    },
+    {
+      "id": "UTT_0218",
+      "text": "Can I write an exit exam if I have two courses left to graduate?",
+      "intent": "query_general_policy",
+      "split": "val"
+    },
+    {
+      "id": "UTT_0333",
+      "text": "Third year",
+      "intent": "clarification_response",
+      "split": "test"
+    },
+    {
+      "id": "UTT_0353",
+      "text": "What is the meaning of life?",
+      "intent": "out_of_scope",
+      "split": "train"
+    },
+    {
+      "id": "UTT_0063",
+      "text": "Calendar date for commencement of lectures",
+      "intent": "check_calendar_date",
+      "split": "test"
+    },
+    {
+      "id": "UTT_0012",
+      "text": "When is the deadline to pay the second fee installment?",
+      "intent": "check_calendar_date",
+      "split": "train"
+    },
+    {
+      "id": "UTT_0007",
+      "text": "Check date of first semester test week",
+      "intent": "check_calendar_date",
+      "split": "train"
+    },
+    {
+      "id": "UTT_0038",
+      "text": "When do lectures commence for Semester 1 2026?",
+      "intent": "check_calendar_date",
+      "split": "train"
+    },
+    {
+      "id": "UTT_0051",
+      "text": "What is the calendar date for the NUST Cultural Festival?",
+      "intent": "check_calendar_date",
+      "split": "val"
+    },
+    {
+      "id": "UTT_0282",
+      "text": "Who do I contact about remarking application inquiries?",
+      "intent": "escalate_human_contact",
+      "split": "val"
+    },
+    {
+      "id": "UTT_0387",
+      "text": "What is the weather like in Windhoek today?",
+      "intent": "out_of_scope",
+      "split": "val"
+    },
+    {
+      "id": "UTT_0378",
+      "text": "Tell me an interesting fun fact about dolphins",
+      "intent": "out_of_scope",
+      "split": "train"
+    },
+    {
+      "id": "UTT_0173",
+      "text": "Can I register for evening classes if I work full-time?",
+      "intent": "query_general_policy",
+      "split": "train"
+    },
+    {
+      "id": "UTT_0121",
+      "text": "What are the prerequisites for Mine Ventilation in mining engineering?",
+      "intent": "check_module_prereq",
+      "split": "train"
+    },
+    {
+      "id": "UTT_0398",
+      "text": "Can you generate an image of a cybernetic cat?",
+      "intent": "out_of_scope",
+      "split": "test"
+    },
+    {
+      "id": "UTT_0172",
+      "text": "What are the regulations on student alcohol possession on campus premises?",
+      "intent": "query_general_policy",
+      "split": "train"
+    },
+    {
+      "id": "UTT_0146",
+      "text": "What is the difference between SADC and non-SADC student fee levies?",
+      "intent": "query_general_policy",
+      "split": "train"
+    },
+    {
+      "id": "UTT_0044",
+      "text": "When are special examinations scheduled in the calendar?",
+      "intent": "check_calendar_date",
+      "split": "train"
+    },
+    {
+      "id": "UTT_0087",
+      "text": "Prerequisites for Highway Geometric Design",
+      "intent": "check_module_prereq",
+      "split": "train"
+    },
+    {
+      "id": "UTT_0243",
+      "text": "I need to talk to someone in Student Financial Services / Debtors",
+      "intent": "escalate_human_contact",
+      "split": "train"
+    },
+    {
+      "id": "UTT_0305",
+      "text": "Bachelor of Accounting",
+      "intent": "clarification_response",
+      "split": "train"
+    },
+    {
+      "id": "UTT_0110",
+      "text": "Prerequisites for Big Data Analytics in data science",
+      "intent": "check_module_prereq",
+      "split": "train"
+    },
+    {
+      "id": "UTT_0266",
+      "text": "How can I reach the Outapi resource centre coordinator?",
+      "intent": "escalate_human_contact",
+      "split": "train"
+    },
+    {
+      "id": "UTT_0386",
+      "text": "What are the symptoms of common cold?",
+      "intent": "out_of_scope",
+      "split": "val"
+    },
+    {
+      "id": "UTT_0239",
+      "text": "I need to escalate my issue to the Assistant Faculty Officer",
+      "intent": "escalate_human_contact",
+      "split": "train"
+    },
+    {
+      "id": "UTT_0165",
+      "text": "What are the gown hiring procedures for graduation ceremony?",
+      "intent": "query_general_policy",
+      "split": "train"
+    },
+    {
+      "id": "UTT_0292",
+      "text": "Second opportunity",
+      "intent": "clarification_response",
+      "split": "train"
+    },
+    {
+      "id": "UTT_0363",
+      "text": "Who won the Rugby World Cup?",
+      "intent": "out_of_scope",
+      "split": "train"
+    },
+    {
+      "id": "UTT_0147",
+      "text": "How does NSFAS funding work for paying tuition and accommodation at NUST?",
+      "intent": "query_general_policy",
+      "split": "train"
+    },
+    {
+      "id": "UTT_0156",
+      "text": "What is the policy on student academic misconduct and plagiarism?",
+      "intent": "query_general_policy",
+      "split": "train"
+    },
+    {
+      "id": "UTT_0297",
+      "text": "2026 academic year",
+      "intent": "clarification_response",
+      "split": "train"
+    },
+    {
+      "id": "UTT_0208",
+      "text": "Can I write exams if my attendance is only 75%?",
+      "intent": "query_general_policy",
+      "split": "train"
+    },
+    {
+      "id": "UTT_0155",
+      "text": "What are the requirements for Mature Age Entry admission?",
+      "intent": "query_general_policy",
+      "split": "train"
+    },
+    {
+      "id": "UTT_0090",
+      "text": "Can I take Network Security without Computer Networks 2?",
+      "intent": "check_module_prereq",
+      "split": "train"
+    },
+    {
+      "id": "UTT_0195",
+      "text": "What are the official NUST bank details for paying student fees?",
+      "intent": "query_general_policy",
+      "split": "train"
+    },
+    {
+      "id": "UTT_0216",
+      "text": "What is the policy for dropping a course after the semester deadline?",
+      "intent": "query_general_policy",
+      "split": "val"
+    },
+    {
+      "id": "UTT_0329",
+      "text": "I want the morning session",
+      "intent": "clarification_response",
+      "split": "val"
+    },
+    {
+      "id": "UTT_0369",
+      "text": "Who is the CEO of Google?",
+      "intent": "out_of_scope",
+      "split": "train"
+    },
+    {
+      "id": "UTT_0152",
+      "text": "What is the examination subminimum requirement?",
+      "intent": "query_general_policy",
+      "split": "train"
+    },
+    {
+      "id": "UTT_0207",
+      "text": "Can I pass a course if my exam mark is below 40%?",
+      "intent": "query_general_policy",
+      "split": "train"
+    },
+    {
+      "id": "UTT_0168",
+      "text": "How much is the consultation fee to visit the campus nurse?",
+      "intent": "query_general_policy",
+      "split": "train"
+    },
+    {
+      "id": "UTT_0210",
+      "text": "How much is the late registration penalty fee?",
+      "intent": "query_general_policy",
+      "split": "val"
+    },
+    {
+      "id": "UTT_0159",
+      "text": "What are the powers and functions of the Students' Representative Council SRC?",
+      "intent": "query_general_policy",
+      "split": "train"
+    },
+    {
+      "id": "UTT_0260",
+      "text": "Escalate this request to human support",
+      "intent": "escalate_human_contact",
+      "split": "train"
+    },
+    {
+      "id": "UTT_0154",
+      "text": "What is the registration deposit fee for undergraduate students?",
+      "intent": "query_general_policy",
+      "split": "train"
+    },
+    {
+      "id": "UTT_0064",
+      "text": "When is the October graduation congregation?",
+      "intent": "check_calendar_date",
+      "split": "test"
+    },
+    {
+      "id": "UTT_0307",
+      "text": "First year",
+      "intent": "clarification_response",
+      "split": "train"
+    },
+    {
+      "id": "UTT_0319",
+      "text": "Engineering mathematics",
+      "intent": "clarification_response",
+      "split": "train"
+    },
+    {
+      "id": "UTT_0397",
+      "text": "Write a rap song about studying for exams",
+      "intent": "out_of_scope",
+      "split": "test"
+    },
+    {
+      "id": "UTT_0370",
+      "text": "How do I fix a leaking water pipe?",
+      "intent": "out_of_scope",
+      "split": "train"
+    },
+    {
+      "id": "UTT_0366",
+      "text": "Are aliens real?",
+      "intent": "out_of_scope",
+      "split": "train"
+    },
+    {
+      "id": "UTT_0101",
+      "text": "Prerequisites for Mobile Application Development MAD612S",
+      "intent": "check_module_prereq",
+      "split": "train"
+    },
+    {
+      "id": "UTT_0276",
+      "text": "Who is the Director of Student Services and what is his office number?",
+      "intent": "escalate_human_contact",
+      "split": "val"
+    },
+    {
+      "id": "UTT_0267",
+      "text": "Phone number for campus security control room",
+      "intent": "escalate_human_contact",
+      "split": "train"
+    },
+    {
+      "id": "UTT_0001",
+      "text": "When are the institutional holidays in 2026?",
+      "intent": "check_calendar_date",
+      "split": "train"
+    },
+    {
+      "id": "UTT_0310",
+      "text": "Faculty of Computing and Informatics",
+      "intent": "clarification_response",
+      "split": "train"
+    },
+    {
+      "id": "UTT_0394",
+      "text": "How much does tuition cost at UNAM University of Namibia?",
+      "intent": "out_of_scope",
+      "split": "test"
+    },
+    {
+      "id": "UTT_0131",
+      "text": "Can I do Engineering Mathematics 3 if I only got 48 in Math 2?",
+      "intent": "check_module_prereq",
+      "split": "val"
+    },
+    {
+      "id": "UTT_0098",
+      "text": "Prerequisites for Emergency Care Clinical Practice 1 in health sciences",
+      "intent": "check_module_prereq",
+      "split": "train"
+    },
+    {
+      "id": "UTT_0296",
+      "text": "Distance education",
+      "intent": "clarification_response",
+      "split": "train"
+    },
+    {
+      "id": "UTT_0198",
+      "text": "Is the library open on weekends and Sundays?",
+      "intent": "query_general_policy",
+      "split": "train"
+    },
+    {
+      "id": "UTT_0317",
+      "text": "No",
+      "intent": "clarification_response",
+      "split": "train"
+    },
+    {
+      "id": "UTT_0262",
+      "text": "Give me the email address for the Faculty of Engineering FEBE office",
+      "intent": "escalate_human_contact",
+      "split": "train"
+    },
+    {
+      "id": "UTT_0224",
+      "text": "Where is the campus health clinic located?",
+      "intent": "query_general_policy",
+      "split": "test"
+    },
+    {
+      "id": "UTT_0161",
+      "text": "What subjects are tested in the mature age entry examination?",
+      "intent": "query_general_policy",
+      "split": "train"
+    },
+    {
+      "id": "UTT_0177",
+      "text": "Can a student be expelled for plagiarism in their thesis?",
+      "intent": "query_general_policy",
+      "split": "train"
+    },
+    {
+      "id": "UTT_0223",
+      "text": "What is the minimum attendance requirement to be allowed to sit for examinations?",
+      "intent": "query_general_policy",
+      "split": "test"
+    },
+    {
+      "id": "UTT_0306",
+      "text": "Second year",
+      "intent": "clarification_response",
+      "split": "train"
+    },
+    {
+      "id": "UTT_0341",
+      "text": "How tall is Mount Kilimanjaro?",
+      "intent": "out_of_scope",
+      "split": "train"
+    },
+    {
+      "id": "UTT_0339",
+      "text": "DSA611S",
+      "intent": "clarification_response",
+      "split": "test"
+    },
+    {
+      "id": "UTT_0136",
+      "text": "Prerequisites for Clinical Pharmacology 1",
+      "intent": "check_module_prereq",
+      "split": "test"
+    },
+    {
+      "id": "UTT_0298",
+      "text": "Undergraduate",
+      "intent": "clarification_response",
+      "split": "train"
+    },
+    {
+      "id": "UTT_0348",
+      "text": "What is the best smartphone to buy under 5000 dollars?",
+      "intent": "out_of_scope",
+      "split": "train"
+    },
+    {
+      "id": "UTT_0134",
+      "text": "Can I take PRG621S without completing PRG510S?",
+      "intent": "check_module_prereq",
+      "split": "val"
+    },
+    {
+      "id": "UTT_0060",
+      "text": "When does registration for 2027 prospective students open?",
+      "intent": "check_calendar_date",
+      "split": "test"
+    },
+    {
+      "id": "UTT_0015",
+      "text": "What day do hostels re-open for semester 2?",
+      "intent": "check_calendar_date",
+      "split": "train"
+    },
+    {
+      "id": "UTT_0170",
+      "text": "What is the daily fine for an overdue library book?",
+      "intent": "query_general_policy",
+      "split": "train"
+    },
+    {
+      "id": "UTT_0275",
+      "text": "How do I contact the Computer Science student society?",
+      "intent": "escalate_human_contact",
+      "split": "val"
+    },
+    {
+      "id": "UTT_0328",
+      "text": "Civil Engineering",
+      "intent": "clarification_response",
+      "split": "val"
+    },
+    {
+      "id": "UTT_0261",
+      "text": "Who is the coordinator for the Otjiwarongo regional office?",
+      "intent": "escalate_human_contact",
+      "split": "train"
+    },
+    {
+      "id": "UTT_0334",
+      "text": "PhD in Informatics",
+      "intent": "clarification_response",
+      "split": "test"
+    },
+    {
+      "id": "UTT_0326",
+      "text": "Diploma program",
+      "intent": "clarification_response",
+      "split": "val"
+    },
+    {
+      "id": "UTT_0036",
+      "text": "What day is study break before June exams?",
+      "intent": "check_calendar_date",
+      "split": "train"
+    },
+    {
+      "id": "UTT_0143",
+      "text": "Can I register for Medical Biochemistry without General Chemistry?",
+      "intent": "check_module_prereq",
+      "split": "test"
+    },
+    {
+      "id": "UTT_0169",
+      "text": "Does NUST provide free psychological counselling and mental health support?",
+      "intent": "query_general_policy",
+      "split": "train"
+    },
+    {
+      "id": "UTT_0205",
+      "text": "How do I appeal against academic exclusion?",
+      "intent": "query_general_policy",
+      "split": "train"
+    },
+    {
+      "id": "UTT_0099",
+      "text": "Can I register for Purchasing Management without Principles of Management?",
+      "intent": "check_module_prereq",
+      "split": "train"
+    },
+    {
+      "id": "UTT_0349",
+      "text": "Can you give me medical diagnosis for my headache?",
+      "intent": "out_of_scope",
+      "split": "train"
+    },
+    {
+      "id": "UTT_0115",
+      "text": "What are the prerequisites for Thermodynamics in FEBE?",
+      "intent": "check_module_prereq",
+      "split": "train"
+    },
+    {
+      "id": "UTT_0117",
+      "text": "What do I need to take Object Oriented Programming OOP611S?",
+      "intent": "check_module_prereq",
+      "split": "train"
+    },
+    {
+      "id": "UTT_0157",
+      "text": "How do credit transfers and course exemptions work from other universities?",
+      "intent": "query_general_policy",
+      "split": "train"
+    },
+    {
+      "id": "UTT_0180",
+      "text": "What percentage of fees is credited if I cancel courses in the second week?",
+      "intent": "query_general_policy",
+      "split": "train"
+    },
+    {
+      "id": "UTT_0236",
+      "text": "Contact number for Eenhana satellite campus",
+      "intent": "escalate_human_contact",
+      "split": "train"
+    },
+    {
+      "id": "UTT_0103",
+      "text": "What modules do I need before taking Computer Networks 1 CMP611S?",
+      "intent": "check_module_prereq",
+      "split": "train"
+    },
+    {
+      "id": "UTT_0114",
+      "text": "Prerequisites for Taxation 1 in accounting",
+      "intent": "check_module_prereq",
+      "split": "train"
+    },
+    {
+      "id": "UTT_0241",
+      "text": "Give me the phone number and email for the Lüderitz satellite campus",
+      "intent": "escalate_human_contact",
+      "split": "train"
+    },
+    {
+      "id": "UTT_0020",
+      "text": "What is the date for Africa Day holiday observance?",
+      "intent": "check_calendar_date",
+      "split": "train"
+    },
+    {
+      "id": "UTT_0196",
+      "text": "What continuous assessment mark do I need to qualify for exams?",
+      "intent": "query_general_policy",
+      "split": "train"
+    },
+    {
+      "id": "UTT_0056",
+      "text": "When does the midterm break start in semester 1?",
+      "intent": "check_calendar_date",
+      "split": "val"
+    },
+    {
+      "id": "UTT_0082",
+      "text": "Prerequisites for Cloud Computing Architecture",
+      "intent": "check_module_prereq",
+      "split": "train"
+    },
+    {
+      "id": "UTT_0137",
+      "text": "Requirements to register for Concrete Technology in civil engineering",
+      "intent": "check_module_prereq",
+      "split": "test"
+    },
+    {
+      "id": "UTT_0361",
+      "text": "What are the best tourist places to visit in Swakopmund?",
+      "intent": "out_of_scope",
+      "split": "train"
+    },
+    {
+      "id": "UTT_0343",
+      "text": "What is the capital city of Australia?",
+      "intent": "out_of_scope",
+      "split": "train"
+    },
+    {
+      "id": "UTT_0211",
+      "text": "How do postgraduate students register their research thesis topics?",
+      "intent": "query_general_policy",
+      "split": "val"
+    },
+    {
+      "id": "UTT_0392",
+      "text": "How do I change a flat car tire?",
+      "intent": "out_of_scope",
+      "split": "test"
+    },
+    {
+      "id": "UTT_0092",
+      "text": "Can I register for Financial Accounting 1B without passing 1A?",
+      "intent": "check_module_prereq",
+      "split": "train"
+    },
+    {
+      "id": "UTT_0013",
+      "text": "When do first semester lectures end?",
+      "intent": "check_calendar_date",
+      "split": "train"
+    },
+    {
+      "id": "UTT_0212",
+      "text": "How many postgraduate students can a single supervisor take?",
+      "intent": "query_general_policy",
+      "split": "val"
+    },
+    {
+      "id": "UTT_0091",
+      "text": "Tell me the prerequisite chain for Distributed Systems DST711S",
+      "intent": "check_module_prereq",
+      "split": "train"
+    },
+    {
+      "id": "UTT_0084",
+      "text": "Can I take Macroeconomics 2 if I failed Microeconomics 1?",
+      "intent": "check_module_prereq",
+      "split": "train"
+    },
+    {
+      "id": "UTT_0122",
+      "text": "What are the prerequisite courses for Business Statistics?",
+      "intent": "check_module_prereq",
+      "split": "train"
+    },
+    {
+      "id": "UTT_0080",
+      "text": "What are the prerequisites for Artificial Intelligence ART811S?",
+      "intent": "check_module_prereq",
+      "split": "train"
+    },
+    {
+      "id": "UTT_0318",
+      "text": "Distance mode via COLL",
+      "intent": "clarification_response",
+      "split": "train"
+    },
+    {
+      "id": "UTT_0209",
+      "text": "How do I make an appointment with the student counsellor?",
+      "intent": "query_general_policy",
+      "split": "val"
+    },
+    {
+      "id": "UTT_0287",
+      "text": "Who is in charge of career guidance and job placement?",
+      "intent": "escalate_human_contact",
+      "split": "test"
+    },
+    {
+      "id": "UTT_0182",
+      "text": "How do I apply for recognition of prior learning RPL?",
+      "intent": "query_general_policy",
+      "split": "train"
+    },
+    {
+      "id": "UTT_0053",
+      "text": "When is the final date for remark application submissions?",
+      "intent": "check_calendar_date",
+      "split": "val"
+    },
+    {
+      "id": "UTT_0342",
+      "text": "Can you play chess with me?",
+      "intent": "out_of_scope",
+      "split": "train"
+    },
+    {
+      "id": "UTT_0128",
+      "text": "What do I need before taking Information Security IFS711S?",
+      "intent": "check_module_prereq",
+      "split": "val"
+    },
+    {
+      "id": "UTT_0350",
+      "text": "What is the currency of Japan?",
+      "intent": "out_of_scope",
+      "split": "train"
+    },
+    {
+      "id": "UTT_0108",
+      "text": "Can I register for Commercial Law 1A and 1B at the same time?",
+      "intent": "check_module_prereq",
+      "split": "train"
+    },
+    {
+      "id": "UTT_0184",
+      "text": "What is the deadline to submit an application for exam remarking?",
+      "intent": "query_general_policy",
+      "split": "train"
+    },
+    {
+      "id": "UTT_0021",
+      "text": "When do second opportunity examinations take place?",
+      "intent": "check_calendar_date",
+      "split": "train"
+    },
+    {
+      "id": "UTT_0187",
+      "text": "Can I transfer my credits from UNAM to NUST?",
+      "intent": "query_general_policy",
+      "split": "train"
+    },
+    {
+      "id": "UTT_0158",
+      "text": "What is the application fee for recognition of prior learning?",
+      "intent": "query_general_policy",
+      "split": "train"
+    },
+    {
+      "id": "UTT_0022",
+      "text": "What is the date for student orientation week?",
+      "intent": "check_calendar_date",
+      "split": "train"
+    },
+    {
+      "id": "UTT_0066",
+      "text": "What is the deadline date for semester 1 course cancellation with 100% credit?",
+      "intent": "check_calendar_date",
+      "split": "test"
+    },
+    {
+      "id": "UTT_0221",
+      "text": "How do student societies register with the Department of Student Services?",
+      "intent": "query_general_policy",
+      "split": "val"
+    },
+    {
+      "id": "UTT_0076",
+      "text": "Tell me the corequisites for Digital Logic Design DLD511S",
+      "intent": "check_module_prereq",
+      "split": "train"
+    },
+    {
+      "id": "UTT_0385",
+      "text": "How fast does light travel in vacuum?",
+      "intent": "out_of_scope",
+      "split": "val"
+    },
+    {
+      "id": "UTT_0299",
+      "text": "Commerce faculty",
+      "intent": "clarification_response",
+      "split": "train"
+    },
+    {
+      "id": "UTT_0190",
+      "text": "How does the supplementary examination qualification work?",
+      "intent": "query_general_policy",
+      "split": "train"
+    },
+    {
+      "id": "UTT_0019",
+      "text": "When is the last day for international student registration?",
+      "intent": "check_calendar_date",
+      "split": "train"
+    },
+    {
+      "id": "UTT_0280",
+      "text": "I need the contact info for the Oranjemund resource centre",
+      "intent": "escalate_human_contact",
+      "split": "val"
+    },
+    {
+      "id": "UTT_0077",
+      "text": "Prerequisites for Natural Language Processing in computing",
+      "intent": "check_module_prereq",
+      "split": "train"
+    },
+    {
+      "id": "UTT_0354",
+      "text": "Write me a poem about machine learning and python",
+      "intent": "out_of_scope",
+      "split": "train"
+    },
+    {
+      "id": "UTT_0039",
+      "text": "Check dates for November second opportunity exams",
+      "intent": "check_calendar_date",
+      "split": "train"
+    },
+    {
+      "id": "UTT_0058",
+      "text": "Is there class during the test week?",
+      "intent": "check_calendar_date",
+      "split": "val"
+    },
+    {
+      "id": "UTT_0005",
+      "text": "Start date of first opportunity exams in semester 1",
+      "intent": "check_calendar_date",
+      "split": "train"
+    },
+    {
+      "id": "UTT_0288",
+      "text": "Email address for the Ongwediva resource centre",
+      "intent": "escalate_human_contact",
+      "split": "test"
+    },
+    {
+      "id": "UTT_0219",
+      "text": "How much does a duplicate student card cost?",
+      "intent": "query_general_policy",
+      "split": "val"
+    },
+    {
+      "id": "UTT_0362",
+      "text": "How do I download music from YouTube?",
+      "intent": "out_of_scope",
+      "split": "train"
+    },
+    {
+      "id": "UTT_0283",
+      "text": "How do I contact the Faculty Officer for Commerce and Human Sciences?",
+      "intent": "escalate_human_contact",
+      "split": "test"
+    },
+    {
+      "id": "UTT_0227",
+      "text": "What meal plan is mandatory for hostel students?",
+      "intent": "query_general_policy",
+      "split": "test"
+    },
+    {
+      "id": "UTT_0380",
+      "text": "Who won the UEFA Champions League last season?",
+      "intent": "out_of_scope",
+      "split": "train"
+    },
+    {
+      "id": "UTT_0083",
+      "text": "What do I need to take Cryptography and Network Security?",
+      "intent": "check_module_prereq",
+      "split": "train"
+    },
+    {
+      "id": "UTT_0135",
+      "text": "Is Introduction to Business Management a prerequisite for Principles of Marketing?",
+      "intent": "check_module_prereq",
+      "split": "test"
+    },
+    {
+      "id": "UTT_0327",
+      "text": "Part-time",
+      "intent": "clarification_response",
+      "split": "val"
+    },
+    {
+      "id": "UTT_0067",
+      "text": "When does the university close for December holidays?",
+      "intent": "check_calendar_date",
+      "split": "test"
+    },
+    {
+      "id": "UTT_0171",
+      "text": "What is the maximum allowed duration for completing a Master's degree?",
+      "intent": "query_general_policy",
+      "split": "train"
+    },
+    {
+      "id": "UTT_0002",
+      "text": "What date is the second installment of tuition fees due?",
+      "intent": "check_calendar_date",
+      "split": "train"
+    },
+    {
+      "id": "UTT_0023",
+      "text": "When does the September spring recess start?",
+      "intent": "check_calendar_date",
+      "split": "train"
+    },
+    {
+      "id": "UTT_0142",
+      "text": "What are the prerequisite rules for Systems Analysis and Design?",
+      "intent": "check_module_prereq",
+      "split": "test"
+    },
+    {
+      "id": "UTT_0217",
+      "text": "How much is the breakfast, lunch, and dinner voucher in the dining hall?",
+      "intent": "query_general_policy",
+      "split": "val"
+    },
+    {
+      "id": "UTT_0325",
+      "text": "I am an international student",
+      "intent": "clarification_response",
+      "split": "val"
+    },
+    {
+      "id": "UTT_0048",
+      "text": "When do postgraduate coursework classes start?",
+      "intent": "check_calendar_date",
+      "split": "train"
+    },
+    {
+      "id": "UTT_0027",
+      "text": "When do classes finish before study week?",
+      "intent": "check_calendar_date",
+      "split": "train"
+    },
+    {
+      "id": "UTT_0129",
+      "text": "Prerequisites for Company Law in the Commerce faculty",
+      "intent": "check_module_prereq",
+      "split": "val"
+    }
+  ]
+}
