@@ -205,10 +205,64 @@ Executed via `scripts/build_intent_dataset.py`:
 }
 ```
 
----
-
 ## 3. Pre-Processing
-*(Pending)*
+
+Stage 3 implements input normalization, language detection, and defensive safety moderation, adhering strictly to Section 3.1 of the project specification. All logic is encapsulated in `src/preprocessing.py` and validated by unit tests in `tests/test_preprocessing.py`.
+
+```
+                         [ Raw User Query ]
+                                  │
+                                  ▼
+                   ┌─────────────────────────────┐
+                   │     Input Normalization     │
+                   │ (Unicode NFC, Strip ASCII)  │
+                   └──────────────┬──────────────┘
+                                  │
+                                  ▼
+                   ┌─────────────────────────────┐
+                   │ Safety & Moderation Filter  │
+                   └──────────────┬──────────────┘
+                                  │
+                     Unsafe? ─────┴───── Safe?
+                        │                  │
+                        ▼                  ▼
+              [ Terminal Error ]  ┌──────────────────┐
+              (Fast Short-Circuit)│Language Detection│
+                                  │   (en, af, kj)   │
+                                  └────────┬─────────┘
+                                           │
+                                           ▼
+                                 [ Clean Processed ]
+                                 (To Intent Router)
+```
+
+### 3.1 Input Normalization (`normalize_text`)
+1. **Control Character Stripping:** Strips non-printable ASCII control characters (`0x00–0x1F`, `0x7F`, preserving standard `\t` and `\n`).
+2. **Canonical Unicode Composition (NFC):** Normalizes composite diacritics into canonical precomposed characters, preserving campus facility names and multilingual loanwords (e.g. *Lüderitz*, *Höpker*, *Goeiemôre*).
+3. **Typography Standardization:** Converts curly/smart quotation marks (`‘’`, `“”`), em/en-dashes (`—`, `–`), and ellipses (`…`) into standard ASCII counterparts.
+4. **Whitespace & Structure Preservation:** Collapses redundant horizontal spaces while retaining necessary paragraph structure.
+5. **Casing & Code Integrity:** Preserves the case integrity of course codes (e.g. `DSA611S`, `PRG510S`), qualification tiers (`NSSCO`, `NSSCAS`), and campus acronyms (`FCI`, `FEBE`, `GSB`, `SRC`).
+
+### 3.2 Multilingual Language Ingestion (`detect_language`)
+1. **N-gram Profile Matcher:** Evaluates token overlaps and sub-word character trigrams against reference distributions for the three primary campus communication languages:
+   * `en`: English (NUST official medium of instruction).
+   * `af`: Afrikaans (regional lingua franca).
+   * `kj`: Oshikwanyama / Oshiwambo (widely spoken indigenous Namibian language).
+2. **Distinctive Marker Triage:** Recognizes immediate high-confidence lexical markers (*"asseblief"*, *"hoeveel"*, *"koshuis"*, *"naini"*, *"oimaliwa"*, *"ondapandula"*).
+3. **Calibrated Confidence & Fallback:** Binds confidence scores between 0.50 and 0.99, gracefully defaulting to institutional English (`en`) for ambiguous or acronym-only shorthand queries.
+
+### 3.3 Safety & Input Moderation Filter (`check_safety`)
+1. **Defensive Guardrails:** Intercepts malicious, toxic, or adversarial inputs before any ML inference or database access occurs:
+   * **Profanity & Harassment Filter:** Lexical matching on abusive terms and self-harm phrases.
+   * **Prompt Injection & Jailbreak Interceptor:** Regular expressions catching adversarial bypasses (`ignore previous instructions`, `bypass guardrails`, `DAN mode`, `reveal system prompt`, `DROP TABLE`, `eval(`).
+2. **Terminal Fast Short-Circuit:** If flagged, the pipeline immediately returns a calibrated, polite error message with `is_safe: false` and the specific violation tag, preventing unnecessary computational overhead.
+
+### 3.4 Verification & Test Coverage (`tests/test_preprocessing.py`)
+The pre-processing pipeline is verified by a dedicated test suite with **16 test cases** across all components:
+* `TestNormalization` (6/6 passing): Empty inputs, non-printable character stripping, whitespace collapsing, typography standardization, diacritics preservation, and module code casing.
+* `TestLanguageDetection` (4/4 passing): High-confidence identification of English, Afrikaans, and Oshiwambo, with robust neutral fallback.
+* `TestSafetyAndModeration` (4/4 passing): Clean prompt pass-through, harassment detection, and prompt injection interception.
+* `TestUnifiedPreprocessPipeline` (2/2 passing): End-to-end safe execution and unsafe short-circuiting.
 
 ---
 
