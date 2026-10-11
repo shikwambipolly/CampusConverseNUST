@@ -267,14 +267,170 @@ The pre-processing pipeline is verified by a dedicated test suite with **16 test
 ---
 
 ## 4. Feature Engineering
-*(Pending)*
+
+Stage 4 extracts discriminative lexical and sub-word numerical representations from normalized student queries, adhering strictly to Section 3.2 of the project specification. Implemented in `src/features.py`.
+
+```
+                        [ Normalized Query ]
+                                  │
+                  ┌───────────────┴───────────────┐
+                  ▼                               ▼
+       [ Word-Level TF-IDF ]           [ Char-Level TF-IDF ]
+      Unigrams & Bigrams (1, 2)       Sub-word N-grams (3, 5)
+       Sublinear Term-Frequency        Boundary Aware (char_wb)
+                  │                               │
+                  └───────────────┬───────────────┘
+                                  ▼
+                        [ FeatureUnion Vector ]
+                      (Dense + Sparse Compound)
+```
+
+### 4.1 Word-Level TF-IDF (`build_word_vectorizer`)
+* **N-gram Range:** Unigrams and bigrams (`ngram_range=(1, 2)`) to capture multi-word campus terminology (e.g., *"exam dates"*, *"pass mark"*, *"prerequisite for"*, *"hostel fee"*).
+* **Scaling:** Sublinear term frequency scaling (`sublinear_tf=True`, mapping $tf \mapsto 1 + \log(tf)$) to prevent high-frequency campus keywords from dominating sparse feature spaces.
+* **Token Pattern:** `(?u)\b[a-zA-Z0-9_-]+\b`, preserving alphanumeric course codes (`DSA611S`, `PRG510S`), qualification tiers (`NSSCO`, `NSSCAS`), and campus acronyms (`FCI`, `FEBE`, `GSB`, `SRC`).
+
+### 4.2 Sub-Word Character-Level TF-IDF (`build_char_vectorizer`)
+* **Morphological Resilience:** Employs character n-grams within word boundaries (`analyzer="char_wb"`, `ngram_range=(3, 5)`).
+* **Out-of-Vocabulary Robustness:** Mitigates student typing variations, minor misspellings, and inflectional morphology across regional loanwords and technical course names without relying on external stemming libraries.
+
+### 4.3 FeatureUnion Representation (`build_feature_extractor`)
+Combines word-level and character-level vectorizers into a single unified `FeatureUnion` representation pipeline that feeds directly into downstream classifiers.
 
 ---
 
 ## 5. Modelling
-*(Pending)*
+
+Stage 5 trains, tunes, and exports the statistical intent classification model, adhering to Section 3.2 and Section 5 of the project specification. Implemented in `src/train_intent.py`.
+
+### 5.1 Architecture & Candidate Benchmarks
+Two classical pipelines were trained on the **Train set (280 samples)** and tuned on the **Validation set (60 samples)**:
+1. **Model A1 (Logistic Regression):** Multinomial Logistic Regression (`C=2.5`, `class_weight="balanced"`, `max_iter=1000`).
+2. **Model A2 (Calibrated LinearSVC - Champion):** `LinearSVC(C=1.5, class_weight="balanced")` calibrated via `CalibratedClassifierCV(method="sigmoid", cv=3)` to output well-calibrated class probability distributions for confidence thresholding.
+
+### 5.2 Validation Tuning Comparison
+
+| Candidate Model | Representation | Val Accuracy | Val Macro F1 | Val Weighted F1 | Selection |
+| :--- | :--- | :---: | :---: | :---: | :---: |
+| **Multinomial Logistic Regression** | Word + Char TF-IDF | 86.67% | 0.8750 | 0.8805 | Candidate |
+| **Calibrated LinearSVC** | Word + Char TF-IDF | **88.33%** | **0.8922** | **0.8983** | **Champion** |
+
+### 5.3 Exported Artifact
+The winning model pipeline is serialized to `models/intent_classifier.joblib` and exposes a production inference interface `predict_intent(text: str)` returning:
+```json
+{
+  "predicted_intent": "check_calendar_date",
+  "confidence_score": 0.9412,
+  "all_probabilities": {
+    "check_calendar_date": 0.9412,
+    "check_module_prereq": 0.0121,
+    "clarification_response": 0.0084,
+    "escalate_human_contact": 0.0105,
+    "out_of_scope": 0.0118,
+    "query_general_policy": 0.0160
+  }
+}
+```
 
 ---
 
 ## 6. Evaluation
-*(Pending)*
+
+Stage 6 assesses the champion model on the untouched **held-out Test set (60 samples)**, measuring classification accuracy, per-class metrics, confusion matrix, and production inference latency.
+
+### 6.1 Test Set Classification Report
+
+```
+                        precision    recall  f1-score   support
+
+   check_calendar_date     1.0000    1.0000    1.0000        11
+   check_module_prereq     1.0000    1.0000    1.0000        11
+clarification_response     0.8889    1.0000    0.9412         8
+escalate_human_contact     0.8000    0.5000    0.6154         8
+          out_of_scope     0.7500    0.6667    0.7059         9
+  query_general_policy     0.7500    0.9231    0.8276        13
+
+              accuracy                         0.8667        60
+             macro avg     0.8648    0.8483    0.8483        60
+          weighted avg     0.8669    0.8667    0.8594        60
+```
+
+### 6.2 Key Metric Highlights
+* **Accuracy:** **86.67%** (52 of 60 unseen queries classified correctly).
+* **Deterministic Intents:**
+  * `check_calendar_date`: **1.0000 Precision / 1.0000 Recall / 1.0000 F1** (11/11).
+  * `check_module_prereq`: **1.0000 Precision / 1.0000 Recall / 1.0000 F1** (11/11).
+  * `clarification_response`: **0.8889 Precision / 1.0000 Recall / 0.9412 F1** (8/8).
+* **Policy RAG Routing:**
+  * `query_general_policy`: **0.7500 Precision / 0.9231 Recall / 0.8276 F1** (12/13).
+* **Inference Speed:** **0.187 ms per query** (~5,350 queries per second) on local CPU, satisfying real-time conversational SLAs.
+
+### 6.3 Confusion Matrix
+
+| Actual \ Predicted | `check_cal` | `check_mod` | `clarif` | `escalate` | `out_of_sc` | `query_pol` |
+| :--- | :---: | :---: | :---: | :---: | :---: | :---: |
+| **`check_calendar_date`** | **11** | 0 | 0 | 0 | 0 | 0 |
+| **`check_module_prereq`** | 0 | **11** | 0 | 0 | 0 | 0 |
+| **`clarification_response`** | 0 | 0 | **8** | 0 | 0 | 0 |
+| **`escalate_human_contact`** | 0 | 0 | 1 | **4** | 2 | 1 |
+| **`out_of_scope`** | 0 | 0 | 0 | 0 | **6** | 3 |
+| **`query_general_policy`** | 0 | 0 | 0 | 1 | 0 | **12** |
+
+### 6.4 Verification Suite (`tests/`)
+All **23 unit and integration tests** pass in **1.70 seconds**:
+* `tests/test_preprocessing.py`: 16/16 tests passing.
+* `tests/test_intent_classifier.py`: 7/7 tests passing.
+
+---
+
+## 7. Retrieval & Tool-Calling Backends
+
+Stage 7 implements the answer-retrieval engines invoked by the intent routing subsystem, adhering strictly to Section 3.4 and Section 3.5 of the project specification.
+
+```
+                              [ Routed Query ]
+                                      │
+                     ┌────────────────┴────────────────┐
+                     ▼                                 ▼
+         [ Deterministic DB Tools ]          [ Hybrid Policy RAG ]
+          (Prereqs, Dates, Contacts)         (1,745 Chunks / 35 Docs)
+                     │                                 │
+            `data/nust_facts.db`             BM25 + TF-IDF Cosine
+                     │                                 │
+                     │                     Reciprocal Rank Fusion (RRF)
+                     │                                 │
+                     └────────────────┬────────────────┘
+                                      ▼
+                        [ Formatted Context & Citations ]
+```
+
+### 7.1 Deterministic Tool-Calling Engine (`src/tools.py`)
+For factual queries requiring exact precision, language model hallucination is prevented by querying local SQLite tables directly:
+1. **`lookup_prerequisite(module_code: str)`:**
+   * Uses regex pattern matching (`\b[A-Z]{3}[0-9]{3}[A-Z0-9]\b`) to extract course codes (e.g., `DSA612S`).
+   * Queries `module_catalog` table returning prerequisites, corequisites, faculty, and department.
+   * Supports fallback fuzzy search on course title (e.g., *"Data Structures"*).
+2. **`lookup_calendar_date(query: str, semester: Optional[int])`:**
+   * Extracts semester indicators (`s1`, `semester 1`, `s2`, `semester 2`) and milestone event keywords (`commence`, `lecture`, `recess`, `break`, `examination`, `registration`, `appeal`, `graduation`).
+   * Cross-references `exam_timetable` if a module code is present; otherwise queries `academic_calendar`.
+3. **`lookup_contact_info(query: str)`:**
+   * Resolves inquiries for all 11 regional campus centres (e.g., *Katima Mulilo*, *Rundu*, *Walvis Bay*, *Lüderitz*, *Keetmanshoop*) and administrative departments (e.g., *Main Library*, *Student Health Clinic*, *Student Counselling*, *Examinations*, *DSS*, *SRC*).
+
+### 7.2 Hybrid Retrieval-Augmented Generation (`src/rag.py`)
+For open-ended institutional policies, admissions criteria, hostel curfews, exam remarking rules, and student governance:
+1. **Dual-Index Search:**
+   * **Sparse BM25 Index:** Exact lexical matching over word-tokenized passages (`rank_bm25.BM25Okapi`).
+   * **Semantic TF-IDF Index:** Sublinear cosine similarity vector space.
+2. **Reciprocal Rank Fusion (RRF):** Merges rankings with $k=60$:
+   $$RRF\_Score(d) = \sum_{m \in \{dense, sparse\}} \frac{1}{60 + rank_m(d)}$$
+3. **Institutional Citation Injection:** Assembles top $k=3$ retrieved passages with verifiable citations:
+   `[Source: <source_document> | Section: <section_title> | Page: <page_number>]`.
+
+### 7.3 Verification & Test Coverage (`tests/test_tools_and_rag.py`)
+The suite of **10 unit tests** validates:
+* Regex extraction of course codes and semester numbers.
+* Exact prerequisite retrieval on real syllabus entries (`DSA612S` $\rightarrow$ `PRG510S`).
+* Calendar milestone and exam session lookups.
+* Regional centre and campus support contacts (Library, Clinic).
+* High-precision RAG policy retrieval citing `2026_GENERAL_INFORMATION_AND_REGULATIONS.pdf` and hostel governance documents.
+* **Overall Test Suite:** **33/33 tests passing** across the complete project repository.
