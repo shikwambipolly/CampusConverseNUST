@@ -177,7 +177,7 @@ def detect_language(text: str) -> Dict[str, any]:
 # Abusive, profane, and harassment patterns
 HARASSMENT_KEYWORDS = {
     "bitch", "bastard", "fuck", "fucking", "shit", "asshole", "idiot",
-    "stupid", "moron", "cunt", "kill yourself", "die", "slut", "whore"
+    "stupid", "moron", "cunt", "slut", "whore"
 }
 
 # Prompt injection and jailbreak attack patterns
@@ -236,7 +236,7 @@ def check_safety(text: str) -> Dict[str, any]:
         flagged.append("harassment_profanity")
 
     # Check multi-word harassment phrases
-    if any(phrase in lower_text for phrase in ["kill yourself", "go to hell"]):
+    if any(phrase in lower_text for phrase in ["kill yourself", "go to hell", "go die"]):
         if "harassment_profanity" not in flagged:
             flagged.append("harassment_profanity")
 

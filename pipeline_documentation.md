@@ -433,4 +433,66 @@ The suite of **10 unit tests** validates:
 * Calendar milestone and exam session lookups.
 * Regional centre and campus support contacts (Library, Clinic).
 * High-precision RAG policy retrieval citing `2026_GENERAL_INFORMATION_AND_REGULATIONS.pdf` and hostel governance documents.
-* **Overall Test Suite:** **33/33 tests passing** across the complete project repository.
+
+---
+
+## 8. Master Orchestration & Dialogue Management
+
+Stage 8 integrates all previous subsystems into an end-to-end conversation engine adhering strictly to Section 3.6, Section 3.7, Section 3.8, and Section 6 of the project specification.
+
+```
+                          [ Incoming Student Query ]
+                                      │
+                   ┌──────────────────▼──────────────────┐
+                   │ Stage 3: Normalization & Moderation │
+                   └──────────────────┬──────────────────┘
+                                      │
+                         [ Is Query Safe & Clean? ]
+                                      │
+                      No ─────────────┴───────────── Yes
+                      ▼                              ▼
+             [ Terminal Block ]             [ Check Dialogue FSM ]
+           (Security/Harassment)                     │
+                                      ┌──────────────┴──────────────┐
+                                      │                             │
+                                  [ Idle ]             [ Awaiting Clarification ]
+                                      │                             │
+                            [ Classify Intent ]            [ Fill Missing Slots ]
+                                      │                             │
+                        [ Confidence tau >= 0.65? ]       [ All Slots Satisfied? ]
+                                      │                             │
+                       No ────────────┴──── Yes            No ──────┴───── Yes
+                       ▼                    ▼              ▼               ▼
+             [ Fallback Escalation ] [ Route to Tool/RAG ] [ Re-prompt ] [ Execute ]
+                                            │                              │
+                                            └──────────────┬───────────────┘
+                                                           ▼
+                                            [ Format Response & Citations ]
+                                                           │
+                                            [ Multilingual Courtesy Framing ]
+```
+
+### 8.1 Clarification Finite State Machine (`src/dialogue.py`)
+To resolve incomplete queries (e.g. asking for prerequisites without providing a course code):
+* **FSM States:** `IDLE` $\rightarrow$ `AWAITING_CLARIFICATION` $\rightarrow$ `IDLE` or `ESCALATED`.
+* **State Persistence:** Tracks `session_id`, `turn_count`, `pending_intent`, `collected_slots`, `missing_slots`, and complete `history`.
+* **Clarification Limit:** Max 2 turns in `AWAITING_CLARIFICATION`. If unresolved, safely transitions to `ESCALATED`.
+
+### 8.2 End-to-End Orchestrator (`src/orchestrator.py`)
+* Implements `process_query(user_text: str, session_id: Optional[str])`.
+* Manages safety filtering, language detection, intent routing, tool execution, and fallback escalation.
+* Automatically injects multilingual framing for Afrikaans (`af`) and Oshikwanyama (`kj`).
+
+### 8.3 Interactive Terminal Chatbot (`src/chat.py`)
+* Provides a real-time console interface with session persistence, intent tags, confidence indicators, and language identification.
+* Launchable via:
+  ```bash
+  python -m src.chat
+  ```
+
+### 8.4 Complete Verification Suite (`tests/`)
+All **41 unit and integration tests** pass in **5.74 seconds**:
+* `tests/test_preprocessing.py`: **16/16 tests passing** (normalization, language detection, defensive guardrails).
+* `tests/test_intent_classifier.py`: **7/7 tests passing** (pipeline loading, schema validation, route predictions).
+* `tests/test_tools_and_rag.py`: **10/10 tests passing** (database tools, hybrid BM25+TF-IDF RAG retrieval).
+* `tests/test_orchestrator.py`: **8/8 tests passing** (end-to-end multi-turn flows, slot filling, fallback, citations).
