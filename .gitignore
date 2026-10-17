@@ -3,12 +3,13 @@ __pycache__/
 *.py[cod]
 *$py.class
 
-# Virtual environments
+# Virtual environments & Local DBs
 .env
 .venv
 env/
 venv/
 ENV/
+chroma_db/
 
 # macOS metadata
 .DS_Store

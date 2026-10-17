@@ -21,3 +21,20 @@ sentence-transformers>=3.0.0
 # Tooling, Testing & Utilities
 tqdm>=4.66.0
 pytest>=7.4.0
+
+# Vector Database (Semantic Layer Storage & Cosine Search)
+chromadb>=0.5.0
+
+# Agentic Layer & Tool Protocol
+fastmcp>=0.1.0
+
+# API & Cloud Run Web Serving
+fastapi>=0.110.0
+uvicorn>=0.28.0
+
+# Relational Database Connector (AlloyDB / PostgreSQL)
+psycopg2-binary>=2.9.9
+
+# LLM Orchestration & Tool Calling
+google-generativeai>=0.7.0
+
