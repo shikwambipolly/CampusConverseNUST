@@ -9,17 +9,30 @@
 
 ## Architecture Overview
 
-CampusConverse uses a hybrid agentic architecture that decouples deterministic structured lookups (calendar dates, module prerequisites, fees, contacts) from unstructured semantic retrieval (regulations, admission rules, conduct, policies).
+CampusConverse uses a unified hybrid agentic architecture that combines deterministic structured lookups (calendar dates, module prerequisites, fees, programmes, contacts) with 3-way hybrid semantic retrieval (BM25 + Sublinear TF-IDF + Chroma Dense Embeddings), multi-intent clause decomposition, multi-turn coreference resolution, and grounded Gemini synthesis.
 
 ```
-[ Student Utterance ] ──► [ Ingestion & Moderation ] ──► [ Intent & Entity Classifier ]
-                                                                   │
-           ┌───────────────────────────────────────────────────────┴──────────────────────────────┐
-           ▼                                                       ▼                              ▼
-  [ Missing Slots? ]                                     [ Structured Intent ]          [ Unstructured Intent ]
-           │                                                       │                              │
-  [ Clarification FSM ]                                   [ Tool Execution ]             [ Hybrid RAG Engine ]
-                                                       (SQLite / JSON Lookups)         (Dense + BM25 Fusion)
+[ Student Utterance ] ──► [ Normalization, Safety & Language Detection ]
+                                               │
+                                               ▼
+                      [ Dialogue FSM & Multi-Turn Coreference Enrichment ]
+                                               │
+                                               ▼
+                      [ Calibrated LinearSVC Intent Classifier + Rescue ]
+                                               │
+                     ┌─────────────────────────┴─────────────────────────┐
+                     ▼                                                   ▼
+            [ Missing Slots? ]                         [ Multi-Intent Clause Decomposition ]
+                     │                                                   │
+           [ Clarification FSM ]                     ┌───────────────────┴───────────────────┐
+                                                     ▼                                       ▼
+                                       [ Deterministic SQLite Tools ]            [ 3-Way Hybrid RAG Engine ]
+                                     (Prereqs, Dates, Fees, Contacts)         (BM25 + TF-IDF + Chroma Dense RRF)
+                                                     │                                       │
+                                                     └───────────────────┬───────────────────┘
+                                                                         ▼
+                                                    [ Grounded Gemini Synthesis + Citations ]
+                                                         (Deterministic Offline Fallback)
 ```
 
 ---
@@ -52,8 +65,8 @@ Execution of [`scripts/download_data.py`] acquired **42 academic documents** tot
 | Target Category | Document Count | Key Representative Files | Primary Downstream Purpose |
 | :--- | :--- | :--- | :--- |
 | **Deterministic Calendars** | 2 | `2026-INSTITUTIONAL-CALENDAR.pdf`<br>`June_2026_Exam_Timetable.pdf` | Deterministic tool lookups for semester milestones, test weeks, and exam dates. |
-| **Curriculum Catalogs & Handbooks** | 5 | Prospectuses 2025/2026 for **FCI**, **FEBE**, **FCHSE**, **FHNRAS**, and **HP-GSB** | Dual use: Tabular extraction of module codes, prerequisites, and corequisites into SQLite; narrative chapters into RAG. |
-| **Institutional Regulations & Policies** | 26 | `2026_GENERAL_INFORMATION_AND_REGULATIONS.pdf`<br>`REGISTRATION_GUIDE_2025.pdf`<br>`SRC_Constitution.pdf`<br>`Guide_to_Prospective_Students_2027.pdf` | Chunked semantic retrieval (BM25 + Dense Multilingual Embeddings) for student policies, admissions, and progression rules. |
+| **Curriculum Catalogs & Handbooks** | 5 | Prospectuses 2025/2026 for **FCI**, **FEBE**, **FCHSE**, **FHNRAS**, and **HP-GSB** | Dual use: Tabular extraction of module codes, prerequisites, and corequisites into SQLite; degree curriculum breakdowns and narrative chapters into 3-Way Hybrid RAG. |
+| **Institutional Regulations & Policies** | 26 | `2026_GENERAL_INFORMATION_AND_REGULATIONS.pdf`<br>`REGISTRATION_GUIDE_2025.pdf`<br>`SRC_Constitution.pdf`<br>`Guide_to_Prospective_Students_2027.pdf` | Chunked semantic retrieval (BM25 + TF-IDF + Chroma Dense Embeddings) for student policies, admissions, and progression rules. |
 | **Academic Forms & Procedures** | 6 | `Exit-Examinations-Application-Form.pdf`<br>`Special-Examinations-Application-Form.pdf`<br>`APPLICATION-FOR-COURSE-RECOGNITION-EXEMPTION-FORM.pdf`<br>`APPLICATION-FOR-REMARK-AND-RECHECK-2017.pdf`<br>`Recognition_of_prior_learning.pdf`<br>`RESUMPTION_OF_STUDIES_APPLICATION_FORM_2024.pdf` | Procedural guidelines and eligibility requirements for administrative appeals and applications. |
 | **Financials & Fees** | 2 | `NUST-Fees-Booklet-2026.pdf`<br>`payment_plan_2022.pdf` | Structured fee tables and payment deadline policies. |
 | **Directories & Contacts** | 1 | `Faculty_Officers_Info.pdf` | Direct routing and escalation contacts for faculty officers and student support. |
@@ -62,17 +75,17 @@ Execution of [`scripts/download_data.py`] acquired **42 academic documents** tot
 
 ## 2. Text Extraction & Cleanup
 
-The text extraction stage splits the acquired corpus into two distinct pathways:
-1. **Deterministic Structured Data (Stage 2A):** Extraction of high-precision tabular facts (module catalogs, prerequisites, academic calendar, contact directories) into an embedded relational SQLite database.
-2. **Unstructured Narrative Data (Stage 2B):** Extraction and chunking of continuous policy text, general regulations, codes of conduct, and administrative procedures for dense and lexical vector retrieval (Pending).
+The text extraction stage splits the acquired corpus into two complementary pathways:
+1. **Deterministic Structured Data (Stage 2A):** Extraction of high-precision tabular facts (module catalogs, prerequisites, academic calendar, programmes, fees, contact directories) into an embedded relational SQLite database (`data/nust_facts.db` / `data/nust_campus.db`).
+2. **Unstructured Narrative & Degree Curriculum Data (Stage 2B):** Extraction, qualification-header enrichment, and chunking of institutional policies, general regulations, and full degree curriculum tables for 3-way hybrid lexical and dense vector retrieval (`data/chunks/corpus_chunks.json` and `data/chroma_db/`).
 
 ---
 
 ### 2.1 Deterministic Fact Extraction & Structured Database (Stage 2A)
 
-#### 2.1.1 Architectural Rationale (SQLite vs. MongoDB)
-CampusConverse implements an embedded relational database (`data/nust_facts.db`) via Python's standard library `sqlite3`:
-* **Zero External Dependencies:** Eliminates the operational overhead and failure modes of running an external database daemon (e.g. `mongod`), enabling reproducible out-of-the-box local execution and CI testing.
+#### 2.1.1 Architectural Rationale (SQLite & Semantic Layer)
+CampusConverse implements an embedded relational database (`data/nust_facts.db` and `data/nust_campus.db`, supporting AlloyDB in cloud deployments via `src/semantic_layer.py`):
+* **Zero External Dependencies:** Eliminates the operational overhead and failure modes of running an external database daemon locally, enabling reproducible out-of-the-box local execution and CI testing.
 * **Strict Relational Integrity:** Enforces unique constraints on course codes, structured date columns (`YYYY-MM-DD`), and indexed lookups.
 * **Native JSON Array Storage:** Prerequisite and corequisite relationships are stored as native JSON text arrays (`["PRG510S", "DBF510S"]`), maintaining schema flexibility while preserving relational guarantees.
 
@@ -96,7 +109,7 @@ Several document anomalies in university prospectuses required specialized parsi
    * Specialization track headers (`STRANDS:`, `SPECIALISATIONS:`) were excluded from module continuation lines.
    * Generic thesis and dissertation modules were disambiguated by contextually appending qualification names (e.g., `Thesis (Master of Computer Science)`).
 
-#### 2.1.3 Structured Database Statistics (`data/nust_facts.db`)
+#### 2.1.3 Structured Database Statistics (`data/nust_facts.db` & `data/nust_campus.db`)
 
 The deterministic database comprises **11 relational tables** and **3,494 total records** (file size: ~696 KB):
 
@@ -118,14 +131,14 @@ The deterministic database comprises **11 relational tables** and **3,494 total 
 
 ---
 
-### 2.2 Unstructured Text Extraction for RAG (Stage 2B)
+### 2.2 Unstructured Text & Curriculum Table Extraction for RAG (Stage 2B)
 
-Stage 2B extracts, cleans, and segments continuous institutional policy narratives, academic regulations, disciplinary codes, and procedures into tokenized semantic chunks for the Hybrid RAG engine.
+Stage 2B extracts, cleans, and segments institutional policy narratives, academic regulations, disciplinary codes, and full degree curriculum breakdowns into tokenized semantic chunks for the 3-Way Hybrid RAG engine.
 
 #### 2.2.1 Extraction & Pre-Chunking Cleaning Protocol
-Executed via `scripts/extract_unstructured.py`:
+Executed via `scripts/extract_unstructured.py` and indexed into ChromaDB via `scripts/ingest_data.py`:
 1. **Running Artifact Elimination:** Systematically strips running headers (*"General Information and Regulations 2026"*, *"Namibia University of Science and Technology"*), footers, standalone page pagination (`[ 42 ]`, `Page 12 of 100`), and dense Table of Contents leader lines (`.....`).
-2. **Tabular Exclusion:** Detects high-density course curriculum pages in faculty prospectuses (`> 8` module codes on a single page) and skips them to avoid polluting narrative policy retrieval with raw tabular listings already indexed deterministically in SQLite.
+2. **Qualification Header Tracking & Curriculum Table Indexing:** Dynamically tracks active degree qualification headings across pages (`BACHELOR OF ...`, `MASTER OF ...`, `DIPLOMA IN ...`, `DOCTOR OF ...`) and prepends a contextual header (`Programme: <QUALIFICATION_NAME> (Curriculum, Modules & Courses)`) to every prospectus chunk. Curriculum breakdown tables (`Year 1`, `Semester 1`, module codes, NQF levels, credits, and prerequisites) are preserved and linked to their parent programme so students can query module breakdowns for any degree and year across all faculties.
 3. **Dynamic Hierarchical Section Tracking:** Recursively tracks regulatory clause prefixes (e.g., `AC4 ATTENDANCE OF LECTURES`, `AC5 EVALUATION AND EXAMINATION`, `G14 ISSUING OF DOCUMENTS`, `SR1 RULES AND CONDUCT`, `F.1.3 PAYMENT REQUIREMENTS`) to enrich metadata and ensure passages remain context-grounded.
 
 #### 2.2.2 Chunking Strategy & Schema
@@ -134,29 +147,29 @@ Adhering to Section 2.2 of the project specification:
 * **Target Chunk Size:** 400 tokens (~1,600 characters).
 * **Chunk Overlap:** 50 tokens (~200 characters) to preserve contextual coherence across clause transitions.
 * **Minimum Chunk Length:** 100 characters (discards trivial trailing fragment noise).
-* **Destination:** `data/chunks/corpus_chunks.json` (2.6 MB).
+* **Destinations:** `data/chunks/corpus_chunks.json` (~3.6 MB) and persistent ChromaDB vector index (`data/chroma_db/`, collection `nust_policies`).
 
 Each chunk strictly adheres to the schema:
 ```json
 {
-  "chunk_id": "GEN_REG_P14_C2",
-  "source_document": "2026_GENERAL_INFORMATION_AND_REGULATIONS.pdf",
-  "section_title": "AC4 Attendance Of Lectures",
-  "page_number": 14,
-  "faculty": "Institutional / General",
-  "approx_tokens": 182,
-  "text": "AC4.1 Attendance Requirements: A student registered for a course is required to attend all lectures, tutorials, and practicals. A student must achieve a minimum of 80% attendance to be eligible for continuous assessment and examinations..."
+  "chunk_id": "FCI_PROSP_P61_C1",
+  "source_document": "2026_Prospectus_FCI.pdf",
+  "section_title": "BACHELOR OF ARTIFICIAL INTELLIGENCE HONOURS 08BAIH - Curriculum & Modules",
+  "page_number": 61,
+  "faculty": "Faculty of Computing and Informatics (FCI)",
+  "approx_tokens": 245,
+  "text": "Programme: BACHELOR OF ARTIFICIAL INTELLIGENCE HONOURS 08BAIH (Curriculum, Modules & Courses)\nCURRICULUM\nSemester 1\nCourse Title Course Code Pre-Requisite NQF Level NQF Credit\nResearch Methodology RME811S None 8 15..."
 }
 ```
 
 #### 2.2.3 Unstructured Corpus Analytics
 
-The extracted corpus contains **1,745 high-quality semantic chunks** totaling **325,679 tokens** (~1.30 MB text) across **35 source documents and official campus portals**:
+The extracted corpus contains **2,340 high-quality semantic chunks** across **35 source documents and official campus portals**:
 
 | Document Category | Source Document / Source Name | Chunks | Key Policy & Domain Coverage |
 | :--- | :--- | :---: | :--- |
 | **Core Academic Regulations & Strategic Plan** | `2026_GENERAL_INFORMATION_AND_REGULATIONS.pdf`<br>`Final_NUST_Re-aligned_and_Reviewed_Strategic_Plan_2021-2025_0723.pdf` | **264** | 80% lecture attendance requirement, 40% examination subminimum, 50% course pass mark, 75% distinction threshold, academic exclusion, student disciplinary code, institutional mission and strategic priorities. |
-| **Faculty Prospectuses** | `2026-FEBE-PROSPECTUS.pdf`<br>`FCHSE_Prospectus_2026.pdf`<br>`FHNRAS-Prospectus-2025.pdf`<br>`2026_Prospectus_FCI.pdf`<br>`Prospectus_HP-GSB_2026.pdf` | **1,101** | Faculty-specific progression rules, work-integrated learning (WIL) prerequisites, degree completion roadmaps, and departmental evaluation criteria across all 5 faculties. |
+| **Faculty Prospectuses & Degree Curricula** | `2026-FEBE-PROSPECTUS.pdf`<br>`FCHSE_Prospectus_2026.pdf`<br>`FHNRAS-Prospectus-2025.pdf`<br>`2026_Prospectus_FCI.pdf`<br>`Prospectus_HP-GSB_2026.pdf` | **1,696** | Complete year-by-year and semester-by-semester module tables (`252` distinct programme headers), NQF credit values, faculty-specific progression rules, work-integrated learning (WIL) rules, and departmental evaluation criteria across all 5 faculties. |
 | **Admissions & Application Schemes** | `Guide_to_Prospective_Students_2027.pdf`<br>`2027_eMature_Age_Application_Form.pdf`<br>`2027_eUndergraduate_Application_Form.pdf`<br>`2027-ePostGraduate_Application_Form.pdf`<br>`2027_eAdvanced_Standing_Application_Form.pdf`<br>`2027-Pocket-Guide-Postgraduate.pdf`<br>`Brochure_STEMProgrammes_20223.pdf`<br>`Notice-current_and_prospective-students.pdf` | **149** | Mature Age Entry (25+ age requirement, experience, English & Math test rules), Advanced Standing credit transfers (UNAM/IUM articulation), undergraduate/postgraduate application checklists, and STEM offerings. |
 | **Student Administration & Resumption** | `REGISTRATION_GUIDE_2025.pdf`<br>`RESUMPTION_OF_STUDIES_APPLICATION_FORM_2024.pdf`<br>`NUST-Luderitz-Satelite-Campus-Flyer.pdf` | **37** | Step-by-step portal self-registration, student portal PIN reset, application for resumption of studies following leave of absence, and Lüderitz campus programmes. |
 | **Postgraduate Supervision & Research** | `Guidelines-for-the-Supervision-and-Examination-of-Postgraduate-Degrees.pdf`<br>`REGISTRATION-OF-RESEARCH-TOPICS.pdf` | **61** | Master and Doctoral thesis proposal submission, supervisor quotas, external examiner appointment, anti-plagiarism guidelines, and research topic registration. |
@@ -165,7 +178,7 @@ The extracted corpus contains **1,745 high-quality semantic chunks** totaling **
 | **Examinations, Appeals & Clearances**| `EMC-Selections-Information-Booklet-2026.pdf`<br>`Updated-Notice-of-Expectation-to-Graduate_0.pdf`<br>`APPLICATION-FOR-REMARK-AND-RECHECK-2017.pdf`<br>`Graduation-Procedures_042026.pdf`<br>`Recognition_of_prior_learning.pdf`<br>`Exit-Examinations-Application-Form.pdf`<br>`Special-Examinations-Application-Form.pdf` | **36** | Expectation to graduate checklist (library and student accounts debt clearance), N$370 remark application window (3-day cutoff), exit exam single-course criteria, medical special exam petitions, gown hiring, and emergency medical care selections. |
 | **Student Societies & Extracurriculars**| `student_societies.json` (Live Portal Scrape) | **21** | Mission statements, executive contacts, eligibility criteria, and activities for all 21 officially registered NUST societies. |
 | **Verified Campus Support Services** | `library.nust.na` (Official Portal)<br>`2026_GENERAL_INFORMATION_AND_REGULATIONS.pdf` (Section DSS) | **2** | Official NUST Library operating hours (Mon–Fri 08:00–22:00, Sat 09:00–17:00, Sun 14:00–20:00), lending limits, overdue fines, Campus Health Clinic hours (adjacent to Shangri-La), full-time nurse, and student counselling services. |
-| **Total** | **35 Source Documents & Campus Portals** | **1,745** | **100% Institutional Asset & Campus Life Coverage** |
+| **Total** | **35 Source Documents & Campus Portals** | **2,340** | **100% Institutional Policy, Degree Curriculum & Campus Life Coverage** |
 
 ---
 
@@ -383,62 +396,70 @@ All **23 unit and integration tests** pass in **1.70 seconds**:
 
 ---
 
-## 7. Retrieval & Tool-Calling Backends
+## 7. Retrieval, Semantic Layer & Tool-Calling Backends
 
 Stage 7 implements the answer-retrieval engines invoked by the intent routing subsystem, adhering strictly to Section 3.4 and Section 3.5 of the project specification.
 
 ```
-                              [ Routed Query ]
-                                      │
-                     ┌────────────────┴────────────────┐
-                     ▼                                 ▼
-         [ Deterministic DB Tools ]          [ Hybrid Policy RAG ]
-          (Prereqs, Dates, Contacts)         (1,745 Chunks / 35 Docs)
-                     │                                 │
-            `data/nust_facts.db`             BM25 + TF-IDF Cosine
-                     │                                 │
-                     │                     Reciprocal Rank Fusion (RRF)
-                     │                                 │
-                     └────────────────┬────────────────┘
-                                      ▼
-                        [ Formatted Context & Citations ]
+                         [ Routed Single / Multi-Intent Query ]
+                                            │
+                      ┌─────────────────────┴─────────────────────┐
+                      ▼                                           ▼
+     [ Deterministic DB Tools & Semantic Layer ]        [ 3-Way Hybrid Policy & Curriculum RAG ]
+     (Prereqs, Dates, Contacts, Fees, Programmes)            (2,340 Chunks / 35 Documents)
+                      │                                           │
+      `data/nust_facts.db` / `nust_campus.db`      BM25 + TF-IDF (20k) + Chroma Dense Embeddings
+                      │                                           │
+                      │                           Reciprocal Rank Fusion (RRF) + Domain Boosts
+                      │                                           │
+                      └─────────────────────┬─────────────────────┘
+                                            ▼
+                         [ Grounded Context & Verifiable Citations ]
 ```
 
-### 7.1 Deterministic Tool-Calling Engine (`src/tools.py`)
-For factual queries requiring exact precision, language model hallucination is prevented by querying local SQLite tables directly:
-1. **`lookup_prerequisite(module_code: str)`:**
+### 7.1 Deterministic Tool-Calling Engine & Semantic Layer (`src/tools.py`, `src/semantic_layer.py`)
+For factual queries requiring exact precision, language model hallucination is prevented by querying relational SQLite / AlloyDB tables directly:
+1. **`lookup_prerequisite(module_code_or_query: str)`:**
    * Uses regex pattern matching (`\b[A-Z]{3}[0-9]{3}[A-Z0-9]\b`) to extract course codes (e.g., `DSA612S`).
-   * Queries `module_catalog` table returning prerequisites, corequisites, faculty, and department.
-   * Supports fallback fuzzy search on course title (e.g., *"Data Structures"*).
+   * Queries `module_catalog` / `modules` returning prerequisites, corequisites, faculty, and department.
+   * Supports full-sentence natural-language course-name matching (`INSTR(LOWER(?), LOWER(module_name)) > 0` for `LENGTH(module_name) >= 10`), prioritizing rows with populated prerequisites so queries like *"What is the prerequisite for Data Structures and Algorithms?"* resolve directly (`DSA521S` $\rightarrow$ `PAP521S`).
 2. **`lookup_calendar_date(query: str, semester: Optional[int])`:**
-   * Extracts semester indicators (`s1`, `semester 1`, `s2`, `semester 2`) and milestone event keywords (`commence`, `lecture`, `recess`, `break`, `examination`, `registration`, `appeal`, `graduation`).
-   * Cross-references `exam_timetable` if a module code is present; otherwise queries `academic_calendar`.
+   * Extracts semester indicators (`s1`, `semester 1`, `s2`, `semester 2`) and maps event keywords to structured SQL categories (`examination`, `assessment`, `registration`, `recess`, `orientation`, `lecture_period`).
+   * Prevents generic start-verbs (`"start"`, `"begin"`, `"commence"`) from overriding specific event categories (e.g., ensuring *"when do first semester exams start?"* retrieves `First Opportunity Examinations (May/June Session)` rather than lecture commencement).
+   * Supports Afrikaans calendar keywords (`registrasie`, `eksamen`, `toets`, `vakansie`, `reses`, `lesing`) and cross-references `exam_timetable` when a module code is present.
 3. **`lookup_contact_info(query: str)`:**
-   * Resolves inquiries for all 11 regional campus centres (e.g., *Katima Mulilo*, *Rundu*, *Walvis Bay*, *Lüderitz*, *Keetmanshoop*) and administrative departments (e.g., *Main Library*, *Student Health Clinic*, *Student Counselling*, *Examinations*, *DSS*, *SRC*).
+   * Resolves inquiries across all **13 Regional & Satellite Campuses** (*Katima Mulilo*, *Rundu*, *Walvis Bay*, *Lüderitz*, *Keetmanshoop*, *Gobabis*, *Eenhana*, *Otjiwarongo*, *Outapi*, *Ongwediva*, *Tsumeb*, *Rietfontein*), campus support units (*Main Library*, *Student Health Clinic*, *Student Counselling*, *Examinations*, *DSS*, *SRC*), and all **Faculty / School / Department Officers** (*Computing & Informatics*, *Engineering & Built Environment*, *Health / Natural Resources / Applied Sciences*, *Commerce / Human Sciences / Education*, *HP-GSB*).
+4. **`lookup_structured_facts(query: str)`:**
+   * Deterministic lookup engine across `fee_structure`, `residence_fees`, `fee_payment_schedule`, `banking_details`, `admission_point_scale` (APS calculator), `programmes` (degree admission requirements & NQF levels), and `student_societies`.
 
-### 7.2 Hybrid Retrieval-Augmented Generation (`src/rag.py`)
-For open-ended institutional policies, admissions criteria, hostel curfews, exam remarking rules, and student governance:
-1. **Dual-Index Search:**
+### 7.2 3-Way Hybrid Retrieval-Augmented Generation (`src/rag.py`)
+For institutional policies, degree curriculum module breakdowns, admissions criteria, hostel curfews, exam remarking rules, and student governance:
+1. **3-Way Hybrid Search:**
    * **Sparse BM25 Index:** Exact lexical matching over word-tokenized passages (`rank_bm25.BM25Okapi`).
-   * **Semantic TF-IDF Index:** Sublinear cosine similarity vector space.
-2. **Reciprocal Rank Fusion (RRF):** Merges rankings with $k=60$:
-   $$RRF\_Score(d) = \sum_{m \in \{dense, sparse\}} \frac{1}{60 + rank_m(d)}$$
-3. **Institutional Citation Injection:** Assembles top $k=3$ retrieved passages with verifiable citations:
+   * **Sublinear TF-IDF Index:** Unigram/bigram cosine similarity vector space (`max_features=20000`, `sublinear_tf=True`).
+   * **Dense Chroma Vector Search:** Semantic dense embeddings (`all-MiniLM-L6-v2` via `NUSTSemanticLayer.search_policies_and_regulations` over `data/chroma_db/`).
+2. **Reciprocal Rank Fusion (RRF):** Merges rankings across all three rankers over a candidate pool (`pool_size = max(top_k * 20, 120)`, $k=60$):
+   $$RRF\_Score(d) = \frac{1}{60 + rank_{BM25}(d)} + \frac{1}{60 + rank_{TFIDF}(d)} + \frac{1.25}{60 + rank_{Chroma}(d)}$$
+3. **Domain-Specific Reranking & Boosting:**
+   * **Exact Course Code Boosting:** Queries mentioning a specific NUST module code (`\b[A-Za-z]{3}[0-9]{3}[A-Za-z0-9]\b`, e.g., `DSA612S`) apply a `+0.045` RRF boost to chunks containing that exact code.
+   * **Programme-Aware Curriculum Table Boosting:** Maps `Programme:` headers across sibling chunks (`prog_to_indices`), propagates base relevance (`0.90x`) from top-ranked programme introduction pages to sibling curriculum table chunks, boosts chunks with $\ge 3$ course codes and `"curriculum"`/`"semester "` in their body (`1.85x` when the queried `"year X"` matches, `1.45x` otherwise), and automatically includes companion `_C2` chunks on the same page.
+4. **Institutional Citation Injection:** Assembles retrieved passages with verifiable citations:
    `[Source: <source_document> | Section: <section_title> | Page: <page_number>]`.
 
 ### 7.3 Verification & Test Coverage (`tests/test_tools_and_rag.py`)
 The suite of **10 unit tests** validates:
-* Regex extraction of course codes and semester numbers.
+* Corpus indexing across all **2,340 chunks** (`assert len(self.retriever.chunks) >= 2300`).
+* Regex and natural-language extraction of course codes, course names, and semester numbers.
 * Exact prerequisite retrieval on real syllabus entries (`DSA612S` $\rightarrow$ `PRG510S`).
-* Calendar milestone and exam session lookups.
-* Regional centre and campus support contacts (Library, Clinic).
-* High-precision RAG policy retrieval citing `2026_GENERAL_INFORMATION_AND_REGULATIONS.pdf` and hostel governance documents.
+* Calendar milestone, exam window, and multilingual Afrikaans lookups.
+* Regional centre, campus support, and faculty officer contacts.
+* High-precision 3-Way Hybrid RAG retrieval citing `2026_GENERAL_INFORMATION_AND_REGULATIONS.pdf`, faculty prospectuses, and hostel governance documents.
 
 ---
 
-## 8. Master Orchestration & Dialogue Management
+## 8. Unified Master Orchestration, Multi-Intent Routing & Grounded Synthesis
 
-Stage 8 integrates all previous subsystems into an end-to-end conversation engine adhering strictly to Section 3.6, Section 3.7, Section 3.8, and Section 6 of the project specification.
+Stage 8 integrates all subsystems into a unified conversational agent adhering to Sections 3.6–3.8 and Section 6 of the project specification.
 
 ```
                           [ Incoming Student Query ]
@@ -450,49 +471,56 @@ Stage 8 integrates all previous subsystems into an end-to-end conversation engin
                          [ Is Query Safe & Clean? ]
                                       │
                       No ─────────────┴───────────── Yes
-                      ▼                              ▼
+                      ▼                               ▼
              [ Terminal Block ]             [ Check Dialogue FSM ]
-           (Security/Harassment)                     │
-                                      ┌──────────────┴──────────────┐
-                                      │                             │
-                                  [ Idle ]             [ Awaiting Clarification ]
-                                      │                             │
-                            [ Classify Intent ]            [ Fill Missing Slots ]
-                                      │                             │
-                        [ Confidence tau >= 0.65? ]       [ All Slots Satisfied? ]
-                                      │                             │
-                       No ────────────┴──── Yes            No ──────┴───── Yes
-                       ▼                    ▼              ▼               ▼
-             [ Fallback Escalation ] [ Route to Tool/RAG ] [ Re-prompt ] [ Execute ]
-                                            │                              │
-                                            └──────────────┬───────────────┘
-                                                           ▼
-                                            [ Format Response & Citations ]
-                                                           │
-                                            [ Multilingual Courtesy Framing ]
+           (Security/Harassment)                      │
+                                      ┌───────────────┴───────────────┐
+                                      │                               │
+                                  [ Idle ]              [ Awaiting Clarification ]
+                                      │                               │
+                     [ Classify Intent + Smart Rescue ]     [ Fill Missing Slots ]
+                                      │                               │
+                   [ Actionable Intent or Rescued Hit? ]    [ All Slots Satisfied? ]
+                                      │                               │
+                       No ────────────┴──── Yes             No ───────┴────── Yes
+                       ▼                     ▼              ▼                  ▼
+           [ Unanswered Contact ]            └──────────────┼──────────────────┘
+                 Fallback                                   │
+                                                            ▼
+                                     [ Multi-Turn Coreference Enrichment ]
+                                                            │
+                                                            ▼
+                                     [ Multi-Intent Clause Decomposition ]
+                                                            │
+                                                            ▼
+                                  [ Execute SQLite Tools + 3-Way Hybrid RAG ]
+                                                            │
+                                                            ▼
+                                  [ Grounded Gemini Synthesis + Citations ]
+                                                            │
+                                            [ Multilingual Framing ]
 ```
 
-### 8.1 Clarification Finite State Machine (`src/dialogue.py`)
-To resolve incomplete queries (e.g. asking for prerequisites without providing a course code):
-* **FSM States:** `IDLE` $\rightarrow$ `AWAITING_CLARIFICATION` $\rightarrow$ `IDLE` or `ESCALATED`.
-* **State Persistence:** Tracks `session_id`, `turn_count`, `pending_intent`, `collected_slots`, `missing_slots`, and complete `history`.
-* **Clarification Limit:** Max 2 turns in `AWAITING_CLARIFICATION`. If unresolved, safely transitions to `ESCALATED`.
+### 8.1 Clarification FSM & Multi-Turn Context Resolution (`src/dialogue.py`, `src/orchestrator.py`)
+* **FSM States:** `IDLE` $\rightarrow$ `AWAITING_CLARIFICATION` $\rightarrow$ `IDLE` or `ESCALATED` (max 2 clarification attempts).
+* **Multi-Turn Coreference Enrichment (`_enrich_with_turn_context`):** Resolves follow-up questions containing pronouns or definite references (`it`, `its`, `that`, `this`, `they`, `the programme`, `the module`) against the prior user turn in `session.history`, automatically carrying over module codes (e.g., Turn 1: *"What is the prerequisite for DSA612S?"* $\rightarrow$ Turn 2: *"How many credits is it worth?"*) and degree programme contexts.
+* **Prerequisite vs. Curriculum Disambiguation:** When `check_module_prereq` is predicted without a module code or matched course name, slot clarification is only requested if the query contains prerequisite keywords (`"prereq"`, `"require"`, `"before taking"`); general curriculum questions (*"What courses do I take in Year 1 of Bachelor of Engineering in Civil Engineering?"*) automatically route to `query_general_policy`.
 
-### 8.2 End-to-End Orchestrator (`src/orchestrator.py`)
-* Implements `process_query(user_text: str, session_id: Optional[str])`.
-* Manages safety filtering, language detection, intent routing, tool execution, and fallback escalation.
-* Automatically injects multilingual framing for Afrikaans (`af`) and Oshikwanyama (`kj`).
+### 8.2 Smart Retrieval Rescue & Multi-Intent Decomposition (`src/orchestrator.py`)
+* **Smart Fallback & Retrieval Rescue:** When classifier confidence $< 0.65$ or an `IDLE`-state query is misclassified as `out_of_scope` / `clarification_response`, the orchestrator checks `lookup_structured_facts` and 3-Way Hybrid RAG (`_has_academic_domain_signal`) before rejecting the query.
+* **Generalized Multi-Intent Clause Decomposition (`_detect_active_intents`):** Splits compound student queries on conjunctions and clause boundaries (`and`, `also`, `plus`, `;`, `?`), classifies each sub-clause, and executes all distinct intents in a single turn (e.g., *Prerequisite + Policy*, *Policy + Calendar Exam Date*, *Calendar + Regional Contact*).
+* **Transparent Unanswered Fallback:** When a query is out-of-scope or cannot be answered from official documents, the assistant clearly states that the question cannot be answered and provides Student Services contact details (`ask@nust.na`, `+264 61 207 9111`) without falsely claiming an automated ticket escalation.
 
-### 8.3 Interactive Terminal Chatbot (`src/chat.py`)
-* Provides a real-time console interface with session persistence, intent tags, confidence indicators, and language identification.
-* Launchable via:
-  ```bash
-  python -m src.chat
-  ```
+### 8.3 Grounded Gemini Synthesis & Interactive Interfaces (`src/chatbot_agent.py`, `src/chat.py`, `app.py`, `src/mcp_server.py`)
+* **Grounded Synthesis (`CampusConverseAgent.synthesize_with_context`):** Uses Gemini (`gemini-3.5-flash-lite`) to synthesize clear, student-friendly answers strictly grounded in the retrieved SQLite and 3-Way Hybrid RAG context while preserving all `[Source: ... | Section: ... | Page: ...]` citations. Automatically responds in the user's language (English, Afrikaans, Oshiwambo) and falls back deterministically to the cited context when offline or without an API key.
+* **Unified Interfaces:**
+  * **Terminal CLI (`src/chat.py`):** `python -m src.chat`
+  * **Streamlit Web UI (`app.py`):** `streamlit run app.py`
+  * **FastMCP Tool Server (`src/mcp_server.py`):** Exposes NUST semantic layer tools over the Model Context Protocol (MCP).
 
 ### 8.4 Complete Verification Suite (`tests/`)
-All **41 unit and integration tests** pass in **5.74 seconds**:
+All **41 unit and integration tests** pass:
 * `tests/test_preprocessing.py`: **16/16 tests passing** (normalization, language detection, defensive guardrails).
 * `tests/test_intent_classifier.py`: **7/7 tests passing** (pipeline loading, schema validation, route predictions).
-* `tests/test_tools_and_rag.py`: **10/10 tests passing** (database tools, hybrid BM25+TF-IDF RAG retrieval).
+* `tests/test_tools_and_rag.py`: **10/10 tests passing** (database tools, $\ge 2,300$ chunk verification, 3-Way Hybrid RAG retrieval).
 * `tests/test_orchestrator.py`: **8/8 tests passing** (end-to-end multi-turn flows, slot filling, fallback, citations).
