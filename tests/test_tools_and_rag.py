@@ -65,7 +65,7 @@ class TestHybridRAG:
         cls.retriever = get_rag_retriever()
 
     def test_corpus_loaded(self):
-        assert len(self.retriever.chunks) == 1745
+        assert len(self.retriever.chunks) >= 2300
 
     def test_search_attendance_policy(self):
         res = search_policy("What is the minimum attendance requirement to write exams?")

@@ -311,7 +311,7 @@ def _collect_intent_context(
         if not structured_res.get("found") and query_text != full_text:
             structured_res = lookup_structured_facts(full_text)
 
-        rag_result = search_policy(query_text, top_k=3)
+        rag_result = search_policy(query_text, top_k=5)
         context_parts = []
         if structured_res.get("found"):
             context_parts.append(structured_res["message"])

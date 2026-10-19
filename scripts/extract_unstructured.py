@@ -248,17 +248,45 @@ def clean_page_text(raw_text: str) -> str:
     return "\n".join(cleaned_lines).strip()
 
 
+PROG_HEADER_RE = re.compile(
+    r"^((?:BACHELOR|MASTER|DOCTOR|DIPLOMA|CERTIFICATE|POSTGRADUATE|HIGHER\s+CERTIFICATE)"
+    r"\s+(?:OF|IN)\s+[A-Z0-9\s\(\)\-&,/]{3,90})$"
+)
+PROG_CODE_INLINE_RE = re.compile(r"\b(0[4-9][A-Z0-9]{3,5}|10[A-Z0-9]{3,5})\b")
+
+
+def detect_programme_header(text: str, current_programme: Optional[str]) -> Optional[str]:
+    """Detects degree/diploma/certificate qualification headings in faculty prospectuses."""
+    lines = [l.strip() for l in text.split("\n") if l.strip()]
+    for idx, l_str in enumerate(lines):
+        # Skip table of contents or list of qualifications offered blocks
+        if ".." in l_str:
+            continue
+        m = PROG_HEADER_RE.match(l_str)
+        if m:
+            header = re.sub(r"\s+", " ", m.group(1)).strip()
+            # Check if next line has a specialisation in parentheses or programme code
+            if idx + 1 < len(lines):
+                nxt = lines[idx + 1]
+                if (nxt.startswith("(") and nxt.endswith(")")) or PROG_CODE_INLINE_RE.fullmatch(nxt):
+                    header = f"{header} {nxt}"
+            return header
+    return current_programme
+
+
 def detect_section_title(text: str, fallback_title: str) -> str:
     """Attempts to discover the most prominent regulatory section header on the page"""
     lines = text.split("\n")
-    for l in lines[:10]:
+    for l in lines[:15]:
         l_str = l.strip()
         # Look for regulatory headers like "AC4 ATTENDANCE OF LECTURES", "SR1 RULES AND CONDUCT", "F.1.3 PAYMENT REQUIREMENTS"
         m = re.match(r"^([A-Z0-9\.\s]{2,8}\s+[A-Za-z\s]{4,75})$", l_str)
         if m:
             return m.group(1).strip()
         # Look for uppercase headings like "ADMISSION REQUIREMENTS", "ASSESSMENT STRATEGIES"
-        if l_str.isupper() and 5 <= len(l_str) <= 60 and not any(k in l_str for k in ["TABLE", "PAGE", "NUST", "FACULTY", "CONTENTS"]):
+        if l_str.isupper() and 5 <= len(l_str) <= 60 and not any(
+            k in l_str for k in ["TABLE", "PAGE", "NUST", "FACULTY", "CONTENTS", "CURRICULUM", "YEAR 1", "YEAR 2", "YEAR 3", "YEAR 4"]
+        ):
             return l_str.title()
     return fallback_title
 
@@ -315,6 +343,7 @@ def process_pdf_document(doc_info: Dict) -> List[Dict]:
     prefix = doc_info["doc_prefix"]
     max_pages = doc_info.get("max_pages")
     pdf_path = os.path.join(RAW_DATA_DIR, filename)
+    is_prospectus = "prospectus" in filename.lower()
 
     if not os.path.exists(pdf_path):
         print(f"[-] File not found: {filename}")
@@ -325,6 +354,7 @@ def process_pdf_document(doc_info: Dict) -> List[Dict]:
     total_pages = len(reader.pages) if max_pages is None else min(len(reader.pages), max_pages)
     chunks = []
     current_section = f"{faculty} General Information"
+    current_programme: Optional[str] = None
 
     for page_idx in range(total_pages):
         page = reader.pages[page_idx]
@@ -332,25 +362,42 @@ def process_pdf_document(doc_info: Dict) -> List[Dict]:
             raw_text = page.extract_text()
             if not raw_text:
                 continue
-        except Exception as e:
+        except Exception:
             continue
 
         clean_text = clean_page_text(raw_text)
         if len(clean_text) < MIN_CHUNK_CHARS:
             continue
 
-        # Skip dense pure-table curriculum pages in prospectuses (handled deterministically by Stage 2A)
+        # Track active programme in faculty prospectuses
+        if is_prospectus:
+            current_programme = detect_programme_header(clean_text, current_programme)
+
         course_code_matches = len(re.findall(r"\b[A-Z]{3}[0-9]{3}[A-Z]\b", clean_text))
-        if course_code_matches > 8 and "curriculum" in clean_text.lower():
-            continue
+        is_curriculum_page = ("curriculum" in clean_text.lower()) or (course_code_matches >= 4)
 
         # Update active section context
-        current_section = detect_section_title(clean_text, current_section)
+        if is_prospectus and current_programme:
+            current_section = (
+                f"{current_programme} - Curriculum & Modules"
+                if is_curriculum_page
+                else current_programme
+            )
+        else:
+            current_section = detect_section_title(clean_text, current_section)
 
         # Split page text into target chunks
         page_chunks = recursive_split_text(clean_text, TARGET_CHUNK_CHARS, CHUNK_OVERLAP_CHARS)
         for chunk_idx, chunk_text in enumerate(page_chunks):
             chunk_id = f"{prefix}_P{page_idx + 1}_C{chunk_idx + 1}"
+            if is_prospectus and current_programme:
+                header_tag = (
+                    f"Programme: {current_programme} (Curriculum, Modules & Courses)\n"
+                    if is_curriculum_page
+                    else f"Programme: {current_programme}\n"
+                )
+                if current_programme.lower() not in chunk_text[:250].lower():
+                    chunk_text = header_tag + chunk_text
             approx_tokens = len(chunk_text.split())
             
             chunks.append({
