@@ -10,7 +10,8 @@ Adheres strictly to spec.md Section 6 (System Execution Lifecycle):
 5. Multilingual Ingestion & Citation Grounding: Verified output with source citations.
 """
 
-from typing import Any, Dict, Optional
+import re
+from typing import Any, Dict, List, Optional, Tuple
 from src.chatbot_agent import get_chatbot_agent
 from src.dialogue import DialogueSession, get_dialogue_manager
 from src.preprocessing import preprocess_input
@@ -208,6 +209,125 @@ def process_query(user_text: str, session_id: Optional[str] = None) -> Dict[str,
     )
 
 
+ACTIONABLE_INTENTS = (
+    "check_module_prereq",
+    "check_calendar_date",
+    "escalate_human_contact",
+    "query_general_policy",
+)
+
+
+def _detect_active_intents(clean_text: str, primary_intent: str) -> List[Tuple[str, str]]:
+    """
+    Detects whether a user query contains a single intent or multiple intents
+    across compound clauses (e.g., Prerequisite + Policy, Calendar + Contact, etc.).
+    Returns an ordered list of unique (intent_name, targeted_query_text) pairs.
+    """
+    if primary_intent not in ACTIONABLE_INTENTS:
+        return [(primary_intent, clean_text)]
+
+    raw_clauses = [
+        c.strip(" ,.?!;")
+        for c in re.split(r"\band\b|\balso\b|\bplus\b|[?;]+", clean_text, flags=re.IGNORECASE)
+        if len(c.strip(" ,.?!;").split()) >= 2
+    ]
+
+    # Single-clause query: fast-path with primary intent only
+    if len(raw_clauses) < 2:
+        return [(primary_intent, clean_text)]
+
+    detected: Dict[str, str] = {primary_intent: clean_text}
+
+    contact_keywords = (
+        "contact", "phone", "telephone", "email", "number for", "rundu",
+        "walvis", "katima", "keetmanshoop", "gobabis", "luderitz", "lüderitz",
+        "tsumeb", "outapi", "ongwediva", "eenhana", "otjiwarongo", "rietfontein"
+    )
+    calendar_keywords = (
+        "when do", "when does", "when is", "commence", "calendar",
+        "recess", "semester 1", "semester 2", "opening", "closing"
+    )
+
+    for clause in raw_clauses:
+        lower_c = clause.lower()
+        sub_res = predict_intent(clause)
+        sub_intent = sub_res["predicted_intent"]
+        sub_conf = sub_res["confidence_score"]
+
+        resolved_intent: Optional[str] = None
+        if sub_intent in ACTIONABLE_INTENTS and sub_conf >= 0.45:
+            resolved_intent = sub_intent
+        elif extract_module_code(clause) or "prereq" in lower_c:
+            resolved_intent = "check_module_prereq"
+        elif any(k in lower_c for k in contact_keywords):
+            resolved_intent = "escalate_human_contact"
+        elif any(k in lower_c for k in calendar_keywords):
+            resolved_intent = "check_calendar_date"
+        elif _has_academic_domain_signal(clause) or lookup_structured_facts(clause).get("found"):
+            resolved_intent = "query_general_policy"
+
+        if resolved_intent:
+            # Store the clause specifically targeted to that intent
+            detected[resolved_intent] = clause
+
+    return list(detected.items())
+
+
+def _collect_intent_context(
+    target_intent: str,
+    query_text: str,
+    full_text: str,
+    session: DialogueSession
+) -> Tuple[str, Dict[str, Any]]:
+    """Executes the tool or 3-way Hybrid RAG lookup for a single actionable intent."""
+    if target_intent == "check_module_prereq":
+        code = (
+            session.collected_slots.get("module_code")
+            or extract_module_code(query_text)
+            or extract_module_code(full_text)
+        )
+        tool_result = lookup_prerequisite(code) if code else {"found": False, "message": ""}
+        return tool_result["message"], tool_result
+
+    if target_intent == "check_calendar_date":
+        sem = (
+            session.collected_slots.get("semester")
+            or extract_semester(query_text)
+            or extract_semester(full_text)
+        )
+        tool_result = lookup_calendar_date(query_text, semester=sem)
+        if not tool_result.get("found") and query_text != full_text:
+            tool_result = lookup_calendar_date(full_text, semester=sem)
+        return tool_result["message"], tool_result
+
+    if target_intent == "escalate_human_contact":
+        tool_result = lookup_contact_info(query_text)
+        if not tool_result.get("found") and query_text != full_text:
+            tool_result = lookup_contact_info(full_text)
+        return tool_result["message"], tool_result
+
+    if target_intent == "query_general_policy":
+        structured_res = lookup_structured_facts(query_text)
+        if not structured_res.get("found") and query_text != full_text:
+            structured_res = lookup_structured_facts(full_text)
+
+        rag_result = search_policy(query_text, top_k=3)
+        context_parts = []
+        if structured_res.get("found"):
+            context_parts.append(structured_res["message"])
+        if rag_result.get("found"):
+            context_parts.append(rag_result["formatted_response"])
+
+        combined_context = "\n\n".join(context_parts) if context_parts else rag_result["formatted_response"]
+        meta = {
+            "chunks_retrieved": len(rag_result["chunks"]),
+            "structured_category": structured_res.get("category")
+        }
+        return combined_context, meta
+
+    return DEFAULT_ESCALATION["message"], DEFAULT_ESCALATION
+
+
 def _execute_intent(
     intent: str,
     clean_text: str,
@@ -215,15 +335,47 @@ def _execute_intent(
     lang: str,
     confidence: float
 ) -> Dict[str, Any]:
-    """Routes validated query to the target tool, 3-way Hybrid RAG, and optional Gemini synthesis."""
+    """Routes validated query (single-intent or multi-intent) to tools, 3-way Hybrid RAG, and Gemini synthesis."""
     framing = MULTILINGUAL_FRAMING.get(lang, "")
-    metadata = {}
+    metadata: Dict[str, Any] = {}
     agent = get_chatbot_agent()
 
+    if intent == "clarification_response":
+        response_text = framing + (
+            "How can I assist you today? You can ask about NUST academic dates, "
+            "module prerequisites, tuition fees, hostel rules, or campus contacts."
+        )
+        session.reset()
+        session.add_turn("assistant", response_text)
+        return {
+            "session_id": session.session_id,
+            "status": "success",
+            "intent": intent,
+            "confidence": confidence,
+            "language": lang,
+            "response": response_text,
+            "metadata": metadata
+        }
+
+    if intent not in ACTIONABLE_INTENTS:
+        response_text = framing + DEFAULT_ESCALATION["message"]
+        metadata = DEFAULT_ESCALATION
+        session.reset()
+        session.add_turn("assistant", response_text)
+        return {
+            "session_id": session.session_id,
+            "status": "success",
+            "intent": intent,
+            "confidence": confidence,
+            "language": lang,
+            "response": response_text,
+            "metadata": metadata
+        }
+
+    # Check if check_module_prereq requires missing slot clarification
     if intent == "check_module_prereq":
         code = session.collected_slots.get("module_code") or extract_module_code(clean_text)
         if not code:
-            # Need slot clarification
             prompt = "Which module code would you like to check prerequisites for (e.g., DSA612S or SWE711S)?"
             session.request_clarification(intent="check_module_prereq", missing_slots=["module_code"], prompt=prompt)
             return {
@@ -236,59 +388,26 @@ def _execute_intent(
                 "metadata": {"missing_slots": ["module_code"]}
             }
 
-        tool_result = lookup_prerequisite(code)
-        synthesized = agent.synthesize_with_context(clean_text, tool_result["message"])
-        response_text = framing + synthesized
-        metadata = tool_result
-        session.reset()
+    active_intents = _detect_active_intents(clean_text, intent)
+    context_blocks: List[str] = []
+    intent_metadata: Dict[str, Any] = {}
 
-    elif intent == "check_calendar_date":
-        sem = session.collected_slots.get("semester") or extract_semester(clean_text)
-        tool_result = lookup_calendar_date(clean_text, semester=sem)
-        synthesized = agent.synthesize_with_context(clean_text, tool_result["message"])
-        response_text = framing + synthesized
-        metadata = tool_result
-        session.reset()
+    for target_intent, sub_query in active_intents:
+        ctx_str, meta = _collect_intent_context(target_intent, sub_query, clean_text, session)
+        if ctx_str:
+            context_blocks.append(ctx_str)
+        if target_intent == intent:
+            metadata = meta
+        intent_metadata[target_intent] = meta
 
-    elif intent == "escalate_human_contact":
-        tool_result = lookup_contact_info(clean_text)
-        synthesized = agent.synthesize_with_context(clean_text, tool_result["message"])
-        response_text = framing + synthesized
-        metadata = tool_result
-        session.reset()
+    if len(active_intents) > 1:
+        metadata["active_intents"] = [i for i, _ in active_intents]
+        metadata["multi_intent_details"] = intent_metadata
 
-    elif intent == "query_general_policy":
-        structured_res = lookup_structured_facts(clean_text)
-        rag_result = search_policy(clean_text, top_k=3)
-
-        context_parts = []
-        if structured_res.get("found"):
-            context_parts.append(structured_res["message"])
-        if rag_result.get("found"):
-            context_parts.append(rag_result["formatted_response"])
-
-        combined_context = "\n\n".join(context_parts) if context_parts else rag_result["formatted_response"]
-        synthesized = agent.synthesize_with_context(clean_text, combined_context)
-        response_text = framing + synthesized
-        metadata = {
-            "chunks_retrieved": len(rag_result["chunks"]),
-            "structured_category": structured_res.get("category")
-        }
-        session.reset()
-
-    elif intent == "clarification_response":
-        # Neutral conversational greeting / short reply
-        response_text = framing + (
-            "How can I assist you today? You can ask about NUST academic dates, "
-            "module prerequisites, tuition fees, hostel rules, or campus contacts."
-        )
-        session.reset()
-
-    else:
-        # Fallback
-        response_text = framing + DEFAULT_ESCALATION["message"]
-        metadata = DEFAULT_ESCALATION
-
+    combined_context = "\n\n".join(context_blocks)
+    synthesized = agent.synthesize_with_context(clean_text, combined_context)
+    response_text = framing + synthesized
+    session.reset()
     session.add_turn("assistant", response_text)
 
     return {
