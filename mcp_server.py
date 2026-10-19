@@ -10,7 +10,7 @@ Purpose:
 
 import os
 from typing import Optional
-from mcp.server.fastmcp import FastMCP
+from fastmcp import FastMCP
 from semantic_layer import SemanticLayer
 
 # 1. Initialize FastMCP server with name

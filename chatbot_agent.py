@@ -21,7 +21,9 @@ from semantic_layer import SemanticLayer
 
 # Configure Gemini API key from environment variable (populated by .env or OS)
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY", "")
-genai.configure(api_key=GEMINI_API_KEY)
+GEMINI_MODEL = os.getenv("GEMINI_MODEL", "gemini-2.5-flash")
+if GEMINI_API_KEY:
+    genai.configure(api_key=GEMINI_API_KEY)
 
 
 class CampusConverseAgent:
@@ -55,9 +57,8 @@ class CampusConverseAgent:
         )
 
         # Initialize the Generative Model with tools enabled
-        # CHANGED: Updated model to 'gemini-3.8-flash' as recommended by the API
         self.model = genai.GenerativeModel(
-            model_name="gemini-3.8-flash",
+            model_name=GEMINI_MODEL,
             tools=self.tools,
             system_instruction=self.system_instruction
         )
