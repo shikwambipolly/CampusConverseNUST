@@ -8,6 +8,10 @@ CampusConverse is a multilingual, router-based conversational agent designed for
 
 ```
 CampusConverseNUST/
+├── api.py                        # FastAPI production web server and /api/chat endpoint
+├── chatbot_agent.py              # Gemini LLM agent with automatic tool calling
+├── mcp_server.py                 # FastMCP Model Context Protocol server
+├── semantic_layer.py             # Chroma vector search & AlloyDB/SQLite lookup layer
 ├── README.md                     # Project overview and quickstart instructions
 ├── pipeline_documentation.md     # Comprehensive stage-by-stage pipeline documentation
 ├── spec.md                       # Formal technical specification and system architecture
@@ -34,7 +38,8 @@ CampusConverseNUST/
 │   ├── download_data.py          # Automated crawler for NUST PDFs and resources
 │   ├── extract_structured.py     # Structured database ingestion script
 │   ├── extract_unstructured.py   # PDF text extraction and semantic chunking script
-│   └── build_intent_dataset.py   # Gold-standard 400-sample intent dataset builder
+│   ├── build_intent_dataset.py   # Gold-standard 400-sample intent dataset builder
+│   └── index_chroma.py           # Chroma vector database indexing and embedding script
 └── tests/
     ├── test_preprocessing.py     # 16 tests: normalization, multilingual, guardrails
     ├── test_intent_classifier.py # 7 tests: model artifact, inference schema, routes
@@ -48,7 +53,7 @@ CampusConverseNUST/
 
 ### 1. Prerequisites & Virtual Environment
 ```bash
-git clone https://github.com/stanleyshikwambi/CampusConverseNUST.git
+git clone https://github.com/shikwambipolly/CampusConverseNUST.git
 cd CampusConverseNUST
 
 python3 -m venv .venv
@@ -68,13 +73,20 @@ Try asking:
 * *"Phone number for the Katima Mulilo campus office"*
 * *"Goeiedag, wanneer begin die eksamen vir semester 1?"*
 
-### 3. Run the Full Test Suite
+### 3. Run the FastAPI Web Server (Cloud Run Ready)
+```bash
+python scripts/index_chroma.py
+uvicorn api:app --reload --port 8080
+```
+Interactive API documentation available at `http://localhost:8080/docs`.
+
+### 4. Run the Full Test Suite
 Execute all 41 unit and integration tests:
 ```bash
 pytest tests/ -v
 ```
 
-### 4. Retrain the Intent Classification Model
+### 5. Retrain the Intent Classification Model
 To train and benchmark candidate models (`LogisticRegression` vs `CalibratedLinearSVC`):
 ```bash
 python -m src.train_intent
@@ -83,9 +95,10 @@ python -m src.train_intent
 ---
 
 ## System Architecture Highlights
-* **Zero External API Dependencies:** Runs 100% locally on CPU without external API keys or cloud tokens.
+* **Zero External API Dependencies Option:** Runs 100% locally on CPU without external API keys or cloud tokens.
 * **Deterministic Precision:** Zero hallucinations on factual queries (timetables, course prerequisites, campus directories) through direct SQLite tool dispatch.
 * **Hybrid RAG Engine:** BM25 lexical search combined with TF-IDF cosine similarity via Reciprocal Rank Fusion (RRF) over 1,745 policy chunks.
+* **Chroma Vector Store & FastMCP Server:** Dense embeddings and Model Context Protocol service ready for Google Cloud Run deployment.
 * **Defensive Safety Guardrail:** Fast short-circuit interception for prompt injections, code exploits, and profanity.
 * **Multi-Turn Clarification FSM:** Automatically detects missing query slots (e.g. course code or semester) and clarifies before execution.
 * **Multilingual Readiness:** Automatic language detection and courtesy framing for English (`en`), Afrikaans (`af`), and Oshikwanyama (`kj`).
