@@ -31,8 +31,8 @@ DEFAULT_ESCALATION = {
     "status": "fallback",
     "reason": "unresolved_or_out_of_scope",
     "message": (
-        "I cannot find authoritative information regarding this request in the current NUST handbooks. "
-        "Your inquiry has been escalated to campus student administration."
+        "I am unable to answer this question based on the available NUST handbooks and records. "
+        "Here are the contact details to get more information:"
     ),
     "escalation_target": {
         "entity": "Office of the Registrar / Student Services",
@@ -183,7 +183,7 @@ def process_query(user_text: str, session_id: Optional[str] = None) -> Dict[str,
         resp_text = (
             framing +
             f"{DEFAULT_ESCALATION['message']}\n\n"
-            f"Escalation Point: {DEFAULT_ESCALATION['escalation_target']['entity']}\n"
+            f"Contact: {DEFAULT_ESCALATION['escalation_target']['entity']}\n"
             f"Email: {DEFAULT_ESCALATION['escalation_target']['email']} | "
             f"Tel: {DEFAULT_ESCALATION['escalation_target']['telephone']}\n"
             f"Location: {DEFAULT_ESCALATION['escalation_target']['location']}"
