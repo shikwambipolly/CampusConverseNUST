@@ -162,9 +162,9 @@ def process_query(user_text: str, session_id: Optional[str] = None) -> Dict[str,
     confidence = intent_res["confidence_score"]
 
     # 4. Smart Fallback & Retrieval Rescue:
-    # Instead of blindly escalating when confidence < 0.65, check if structured DB tables
-    # or 3-way Hybrid RAG have relevant NUST answers first (while still escalating non-academic OOD queries).
-    if confidence < 0.65 or intent == "out_of_scope":
+    # Instead of blindly escalating when confidence < 0.65 (or when an IDLE query is misclassified
+    # as clarification_response), check if structured DB tables or 3-way Hybrid RAG have relevant NUST answers first.
+    if confidence < 0.65 or intent in ("out_of_scope", "clarification_response"):
         structured_hit = lookup_structured_facts(clean_text)
         has_domain_signal = _has_academic_domain_signal(clean_text)
         rag_hit = search_policy(clean_text, top_k=3) if has_domain_signal else {"is_relevant": False}
@@ -177,6 +177,15 @@ def process_query(user_text: str, session_id: Optional[str] = None) -> Dict[str,
                 session=session,
                 lang=lang,
                 confidence=max(confidence, 0.65)
+            )
+
+        if intent == "clarification_response":
+            return _execute_intent(
+                intent=intent,
+                clean_text=clean_text,
+                session=session,
+                lang=lang,
+                confidence=confidence
             )
 
         framing = MULTILINGUAL_FRAMING.get(lang, "")
@@ -215,6 +224,32 @@ ACTIONABLE_INTENTS = (
     "escalate_human_contact",
     "query_general_policy",
 )
+
+
+def _enrich_with_turn_context(clean_text: str, session: DialogueSession) -> str:
+    """
+    If the current user query contains coreference pronouns (e.g. 'it', 'its', 'that', 'they')
+    and there is a prior user turn in the session history, enriches the query with the prior turn's topic.
+    """
+    prior_user_turns = [h["content"] for h in session.history[:-1] if h.get("role") == "user"]
+    if not prior_user_turns:
+        return clean_text
+
+    has_coref = bool(
+        re.search(
+            r"\b(it|its|that|this|they|them|their)\b|\bthe\s+(programme|program|degree|course|module)\b",
+            clean_text.lower()
+        )
+    )
+    if not has_coref:
+        return clean_text
+
+    prev_turn = prior_user_turns[-1]
+    prev_code = extract_module_code(prev_turn)
+    if prev_code and not extract_module_code(clean_text):
+        session.collected_slots["module_code"] = prev_code
+        return f"{clean_text} (Regarding module {prev_code} from previous question: {prev_turn})"
+    return f"{clean_text} (Regarding previous question: {prev_turn})"
 
 
 def _detect_active_intents(clean_text: str, primary_intent: str) -> List[Tuple[str, str]]:
@@ -286,8 +321,13 @@ def _collect_intent_context(
             or extract_module_code(query_text)
             or extract_module_code(full_text)
         )
-        tool_result = lookup_prerequisite(code) if code else {"found": False, "message": ""}
-        return tool_result["message"], tool_result
+        tool_result = lookup_prerequisite(code or query_text)
+        msg = tool_result["message"]
+        if not tool_result.get("found"):
+            rag_res = search_policy(f"{code or query_text} prerequisite curriculum", top_k=3)
+            if rag_res.get("found") and rag_res.get("is_relevant"):
+                msg = msg + "\n\n" + rag_res["formatted_response"]
+        return msg, tool_result
 
     if target_intent == "check_calendar_date":
         sem = (
@@ -304,7 +344,12 @@ def _collect_intent_context(
         tool_result = lookup_contact_info(query_text)
         if not tool_result.get("found") and query_text != full_text:
             tool_result = lookup_contact_info(full_text)
-        return tool_result["message"], tool_result
+        msg = tool_result["message"]
+        if not tool_result.get("found"):
+            rag_res = search_policy(query_text, top_k=3)
+            if rag_res.get("found") and rag_res.get("is_relevant"):
+                msg = msg + "\n\n" + rag_res["formatted_response"]
+        return msg, tool_result
 
     if target_intent == "query_general_policy":
         structured_res = lookup_structured_facts(query_text)
@@ -372,28 +417,39 @@ def _execute_intent(
             "metadata": metadata
         }
 
+    enriched_text = _enrich_with_turn_context(clean_text, session)
+
     # Check if check_module_prereq requires missing slot clarification
     if intent == "check_module_prereq":
-        code = session.collected_slots.get("module_code") or extract_module_code(clean_text)
+        code = session.collected_slots.get("module_code") or extract_module_code(enriched_text)
         if not code:
-            prompt = "Which module code would you like to check prerequisites for (e.g., DSA612S or SWE711S)?"
-            session.request_clarification(intent="check_module_prereq", missing_slots=["module_code"], prompt=prompt)
-            return {
-                "session_id": session.session_id,
-                "status": "clarification",
-                "intent": intent,
-                "confidence": confidence,
-                "language": lang,
-                "response": prompt,
-                "metadata": {"missing_slots": ["module_code"]}
-            }
+            name_lookup = lookup_prerequisite(enriched_text)
+            if name_lookup.get("found"):
+                code = name_lookup.get("module_code")
+                session.collected_slots["module_code"] = code
+        if not code:
+            if not any(k in enriched_text.lower() for k in ("prereq", "require", "before taking")):
+                intent = "query_general_policy"
+            else:
+                prompt = "Which module code would you like to check prerequisites for (e.g., DSA612S or SWE711S)?"
+                session.request_clarification(intent="check_module_prereq", missing_slots=["module_code"], prompt=prompt)
+                return {
+                    "session_id": session.session_id,
+                    "status": "clarification",
+                    "intent": intent,
+                    "confidence": confidence,
+                    "language": lang,
+                    "response": prompt,
+                    "metadata": {"missing_slots": ["module_code"]}
+                }
 
     active_intents = _detect_active_intents(clean_text, intent)
     context_blocks: List[str] = []
     intent_metadata: Dict[str, Any] = {}
 
     for target_intent, sub_query in active_intents:
-        ctx_str, meta = _collect_intent_context(target_intent, sub_query, clean_text, session)
+        effective_sub_query = enriched_text if sub_query == clean_text else sub_query
+        ctx_str, meta = _collect_intent_context(target_intent, effective_sub_query, enriched_text, session)
         if ctx_str:
             context_blocks.append(ctx_str)
         if target_intent == intent:
@@ -405,7 +461,7 @@ def _execute_intent(
         metadata["multi_intent_details"] = intent_metadata
 
     combined_context = "\n\n".join(context_blocks)
-    synthesized = agent.synthesize_with_context(clean_text, combined_context)
+    synthesized = agent.synthesize_with_context(enriched_text, combined_context)
     response_text = framing + synthesized
     session.reset()
     session.add_turn("assistant", response_text)

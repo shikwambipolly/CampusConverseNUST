@@ -52,6 +52,11 @@ class HybridRAGRetriever:
         self.chunk_id_to_idx = {
             c.get("chunk_id", str(i)): i for i, c in enumerate(self.chunks)
         }
+        self.prog_to_indices: Dict[str, List[int]] = {}
+        for i, c in enumerate(self.chunks):
+            first_line = c.get("text", "").split("\n", 1)[0].strip()
+            if first_line.startswith("Programme:"):
+                self.prog_to_indices.setdefault(first_line, []).append(i)
 
         # 1. Build BM25 Index
         corpus_tokens = [_tokenize(c["text"] + " " + c.get("section_title", "")) for c in self.chunks]
@@ -63,7 +68,7 @@ class HybridRAGRetriever:
             preprocessor=normalize_text,
             ngram_range=(1, 2),
             sublinear_tf=True,
-            max_features=8000
+            max_features=20000
         )
         self.tfidf_matrix = self.vectorizer.fit_transform(corpus_texts)
 
@@ -76,21 +81,23 @@ class HybridRAGRetriever:
         if not q_tokens:
             return []
 
+        pool_size = max(top_k * 20, 120)
+
         # 1. BM25 scoring & ranking
         bm25_scores = self.bm25.get_scores(q_tokens)
-        bm25_ranked_indices = np.argsort(bm25_scores)[::-1][:top_k * 5]
+        bm25_ranked_indices = np.argsort(bm25_scores)[::-1][:pool_size]
 
         # 2. TF-IDF Cosine scoring & ranking
         q_vec = self.vectorizer.transform([query])
         tfidf_scores = cosine_similarity(q_vec, self.tfidf_matrix).flatten()
-        tfidf_ranked_indices = np.argsort(tfidf_scores)[::-1][:top_k * 5]
+        tfidf_ranked_indices = np.argsort(tfidf_scores)[::-1][:pool_size]
 
         # 3. Dense Chroma Vector Search (if available)
         chroma_ranked_indices: List[int] = []
         chroma_distances: Dict[int, float] = {}
         try:
             semantic = get_semantic_layer()
-            dense_hits = semantic.search_policies_and_regulations(query=query, n_results=top_k * 5)
+            dense_hits = semantic.search_policies_and_regulations(query=query, n_results=min(pool_size, 60))
             for hit in dense_hits:
                 cid = hit.get("chunk_id")
                 if cid and cid in self.chunk_id_to_idx:
@@ -117,6 +124,53 @@ class HybridRAGRetriever:
 
         if not rrf_scores:
             return []
+
+        # 5. Exact Course Code Boosting (when query mentions a specific NUST module code like DSA612S)
+        q_codes = [m.lower() for m in re.findall(r"\b[A-Za-z]{3}[0-9]{3}[A-Za-z0-9]\b", query)]
+        if q_codes:
+            for idx, chunk in enumerate(self.chunks):
+                c_lower = chunk.get("text", "").lower()
+                if any(code in c_lower for code in q_codes):
+                    rrf_scores[idx] = rrf_scores.get(idx, 0.0) + 0.045
+
+        # 6. Curriculum table boosting for module/course breakdown queries
+        lower_q = query.lower()
+        is_curriculum_query = any(
+            k in lower_q
+            for k in ("module", "modules", "course", "courses", "curriculum", "subjects", "year 1", "year 2", "year 3", "year 4")
+        )
+        if is_curriculum_query:
+            year_match = re.search(r"\byear\s*([1-4])\b", lower_q)
+            target_year = f"year {year_match.group(1)}" if year_match else None
+
+            # Propagate base relevance from top-matched Programme intro chunks to sibling curriculum table chunks
+            prog_best_score: Dict[str, float] = {}
+            for idx, score in rrf_scores.items():
+                first_line = self.chunks[idx].get("text", "").split("\n", 1)[0].strip()
+                if first_line.startswith("Programme:"):
+                    if score > prog_best_score.get(first_line, 0.0):
+                        prog_best_score[first_line] = score
+
+            top_progs = sorted(prog_best_score.items(), key=lambda x: x[1], reverse=True)[:3]
+            for prog_header, best_score in top_progs:
+                for sib_idx in self.prog_to_indices.get(prog_header, []):
+                    sib_body = self.chunks[sib_idx].get("text", "").split("\n", 1)[-1].lower()
+                    if "semester " in sib_body or "curriculum" in sib_body:
+                        rrf_scores[sib_idx] = max(rrf_scores.get(sib_idx, 0.0), best_score * 0.90)
+
+            for idx in list(rrf_scores.keys()):
+                c_text = self.chunks[idx].get("text", "")
+                body_lower = c_text.split("\n", 1)[-1].lower()
+                code_count = len(re.findall(r"\b[A-Z]{3}[0-9]{3}[A-Z0-9]\b", c_text))
+                if code_count >= 3 and ("curriculum" in body_lower or "semester " in body_lower):
+                    boost = 1.85 if (target_year and target_year in body_lower) else 1.45
+                    rrf_scores[idx] *= boost
+                    # If curriculum table spans _C1 and _C2 on the same page, ensure companion chunk is included
+                    cid = self.chunks[idx].get("chunk_id", "")
+                    if cid.endswith("_C1"):
+                        comp_idx = self.chunk_id_to_idx.get(cid[:-3] + "_C2")
+                        if comp_idx is not None:
+                            rrf_scores[comp_idx] = max(rrf_scores.get(comp_idx, 0.0), rrf_scores[idx] * 0.95)
 
         # Sort by final fused RRF score
         sorted_indices = sorted(rrf_scores.keys(), key=lambda i: rrf_scores[i], reverse=True)[:top_k]

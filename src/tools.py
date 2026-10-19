@@ -77,6 +77,16 @@ def lookup_prerequisite(query_or_code: str) -> Dict[str, Any]:
         )
         row = cursor.fetchone()
 
+    # If query is a full sentence containing a module name (e.g., "What is the prerequisite for Data Structures and Algorithms?")
+    if not row and len(query_or_code.strip()) >= 10:
+        cursor.execute(
+            "SELECT module_code, module_name, faculty, department, prerequisites, corequisites "
+            "FROM module_catalog WHERE LENGTH(module_name) >= 10 AND INSTR(LOWER(?), LOWER(module_name)) > 0 "
+            "ORDER BY (CASE WHEN prerequisites NOT IN ('[]', '', 'None') THEN 0 ELSE 1 END), LENGTH(module_name) DESC LIMIT 1",
+            (query_or_code.strip(),)
+        )
+        row = cursor.fetchone()
+
     conn.close()
 
     if row:
@@ -145,21 +155,37 @@ def lookup_calendar_date(query: str, semester: Optional[int] = None) -> Dict[str
                 "message": f"Official Exam Timetable for {code}:\n" + "\n".join(details)
             }
 
-    # Keyword extraction for academic calendar
+    # Keyword extraction for academic calendar (including Afrikaans terms)
     lower_query = query.lower()
     keywords = []
-    if "commence" in lower_query or "start" in lower_query or "begin" in lower_query or "lecture" in lower_query:
-        keywords.extend(["commence", "start", "lecture"])
-    if "recess" in lower_query or "break" in lower_query or "holiday" in lower_query:
+    categories = []
+
+    if any(w in lower_query for w in ("recess", "break", "holiday", "vakansie", "reses")):
         keywords.extend(["recess", "break"])
-    if "exam" in lower_query or "examination" in lower_query or "test" in lower_query:
-        keywords.extend(["examination", "exam", "test"])
-    if "registration" in lower_query or "register" in lower_query:
+        categories.append("recess")
+    if any(w in lower_query for w in ("exam", "examination", "eksamen")):
+        categories.append("examination")
+    if any(w in lower_query for w in ("test", "toets")):
+        keywords.append("test")
+        categories.append("assessment")
+    if any(w in lower_query for w in ("registration", "register", "registrasie", "registreer")):
         keywords.extend(["registration", "register"])
-    if "appeal" in lower_query or "remark" in lower_query:
-        keywords.extend(["appeal", "remark"])
+        categories.append("registration")
+    if any(w in lower_query for w in ("appeal", "remark", "recheck")):
+        keywords.extend(["appeal", "remark", "recheck"])
     if "graduation" in lower_query:
-        keywords.extend(["graduation"])
+        keywords.append("graduation")
+    if "orientation" in lower_query:
+        keywords.append("orientation")
+        categories.append("orientation")
+
+    # Only fall back to lecture_period on generic start/begin/commence if no specific event type was requested
+    if (
+        any(w in lower_query for w in ("lecture", "lesing", "classes"))
+        or (not keywords and not categories and any(w in lower_query for w in ("commence", "start", "begin", "open")))
+    ):
+        keywords.extend(["commence", "lecture"])
+        categories.append("lecture_period")
 
     sql = "SELECT academic_year, semester, event_name, start_date, end_date, category FROM academic_calendar WHERE 1=1"
     params = []
@@ -168,12 +194,18 @@ def lookup_calendar_date(query: str, semester: Optional[int] = None) -> Dict[str
         sql += " AND (semester = ? OR semester IS NULL)"
         params.append(sem)
 
-    if keywords:
-        kw_clauses = " OR ".join(["LOWER(event_name) LIKE ?" for _ in keywords])
-        sql += f" AND ({kw_clauses})"
-        params.extend([f"%{kw}%" for kw in keywords])
+    filter_clauses = []
+    for kw in keywords:
+        filter_clauses.append("LOWER(event_name) LIKE ?")
+        params.append(f"%{kw}%")
+    for cat in categories:
+        filter_clauses.append("LOWER(category) = ?")
+        params.append(cat)
 
-    sql += " ORDER BY start_date ASC LIMIT 5"
+    if filter_clauses:
+        sql += f" AND ({' OR '.join(filter_clauses)})"
+
+    sql += " ORDER BY start_date ASC LIMIT 8"
     cursor.execute(sql, params)
     rows = cursor.fetchall()
 
@@ -181,7 +213,7 @@ def lookup_calendar_date(query: str, semester: Optional[int] = None) -> Dict[str
     if not rows and sem:
         cursor.execute(
             "SELECT academic_year, semester, event_name, start_date, end_date, category "
-            "FROM academic_calendar WHERE semester = ? ORDER BY start_date ASC LIMIT 5",
+            "FROM academic_calendar WHERE semester = ? ORDER BY start_date ASC LIMIT 8",
             (sem,)
         )
         rows = cursor.fetchall()
@@ -240,22 +272,33 @@ def lookup_contact_info(query: str) -> Dict[str, Any]:
         )
         rows = cursor.fetchall()
     else:
-        # Check departments / services (Library, Clinic, Counselling, Admissions, Exams, Fees, DSS)
+        # Check departments, faculties, and services
         search_terms = []
-        if "library" in lower:
-            search_terms.append("library")
-        if "clinic" in lower or "health" in lower or "nurse" in lower or "doctor" in lower:
-            search_terms.append("clinic")
-        if "counsel" in lower or "psycholog" in lower or "mental" in lower:
-            search_terms.append("counselling")
-        if "exam" in lower:
-            search_terms.append("examination")
-        if "fee" in lower or "debt" in lower or "account" in lower:
-            search_terms.append("student account")
-        if "admission" in lower or "apply" in lower:
-            search_terms.append("admission")
-        if "src" in lower:
-            search_terms.append("src")
+        dept_keywords = [
+            ("library", "library"),
+            ("clinic", "clinic"), ("health service", "clinic"), ("nurse", "clinic"), ("doctor", "clinic"),
+            ("counsel", "counselling"), ("psycholog", "counselling"), ("mental", "counselling"),
+            ("exam", "examination"),
+            ("fee", "student account"), ("debt", "student account"), ("account", "student account"),
+            ("admission", "admission"), ("apply", "admission"),
+            ("src", "src"),
+            ("computing", "computing"), ("informatics", "informatics"),
+            ("engineering", "engineering"),
+            ("built environment", "built environment"),
+            ("natural resources", "natural resources"), ("applied sciences", "applied sciences"),
+            ("human sciences", "human sciences"), ("education", "education"),
+            ("accounting", "accounting"), ("economics", "economics"), ("finance", "finance"),
+            ("marketing", "marketing"), ("logistics", "logistics"), ("hospitality", "hospitality"),
+            ("governance", "governance"), ("management sciences", "management sciences"),
+            ("graduate school", "graduate school"), ("hp-gsb", "graduate school"),
+            ("student services", "student services"),
+        ]
+        for trigger, term in dept_keywords:
+            if trigger in lower and term not in search_terms:
+                search_terms.append(term)
+
+        if not search_terms and "faculty officer" in lower:
+            search_terms.append("faculty officer")
 
         if search_terms:
             clauses = " OR ".join(["LOWER(department) LIKE ? OR LOWER(role) LIKE ?" for _ in search_terms])
