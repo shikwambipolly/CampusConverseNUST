@@ -295,3 +295,173 @@ def lookup_contact_info(query: str) -> Dict[str, Any]:
         "contacts": [],
         "message": "No matching campus contact details found. You can reach the NUST Main Campus Switchboard at +264 61 207 9111 or info@nust.na."
     }
+
+
+def lookup_fees_and_residence(query: str) -> Dict[str, Any]:
+    """
+    Looks up official tuition/registration/admin fees, hostel residence fees,
+    payment schedules, and banking details from nust_facts.db.
+    """
+    lower = query.lower()
+    conn = get_db_connection()
+    cursor = conn.cursor()
+
+    fee_keywords = [
+        "fee", "fees", "cost", "price", "registration", "deposit", "tuition",
+        "hostel", "residence", "accommodation", "meal", "dining", "bank",
+        "banking", "account", "payment", "installment", "penalty", "remark", "exemption"
+    ]
+    if not any(k in lower for k in fee_keywords):
+        conn.close()
+        return {"found": False, "message": ""}
+
+    sections = []
+
+    # 1. Check residence / hostel fees if mentioned
+    if any(k in lower for k in ("hostel", "residence", "accommodation", "room", "meal", "dining", "catering")):
+        cursor.execute("SELECT item_name, category, amount_nad, period, notes FROM residence_fees")
+        res_rows = [dict(r) for r in cursor.fetchall()]
+        if res_rows:
+            lines = [f"• {r['item_name']} ({r['category']}): N$ {r['amount_nad']:,.2f} ({r['period']})" for r in res_rows]
+            sections.append("Official NUST Hostel & Residence Fees:\n" + "\n".join(lines))
+
+    # 2. Check general / administrative fees
+    cursor.execute("SELECT fee_category, fee_name, amount_nad, frequency, notes FROM fee_structure")
+    all_fees = [dict(r) for r in cursor.fetchall()]
+    matched_fees = [
+        f for f in all_fees
+        if any(w in lower for w in f["fee_name"].lower().split() if len(w) > 3)
+        or f["fee_category"].lower() in lower
+    ]
+    if not matched_fees and any(k in lower for k in ("fee", "fees", "registration", "deposit", "cost", "tuition")):
+        matched_fees = all_fees[:8]
+
+    if matched_fees:
+        lines = [
+            f"• {f['fee_name']} ({f['fee_category']}): N$ {f['amount_nad']:,.2f} ({f['frequency']})"
+            + (f" — {f['notes']}" if f.get("notes") else "")
+            for f in matched_fees
+        ]
+        sections.append("Official NUST Administrative & Registration Fees:\n" + "\n".join(lines))
+
+    # 3. Payment schedule if payment/installment/deadline mentioned
+    if any(k in lower for k in ("schedule", "installment", "deadline", "when to pay", "payment", "deposit")):
+        cursor.execute("SELECT deadline_date, course_type, percentage_due, description FROM fee_payment_schedule")
+        sched = [dict(r) for r in cursor.fetchall()]
+        if sched:
+            lines = [f"• {s['deadline_date']} ({s['course_type']}): {s['percentage_due']}% — {s['description']}" for s in sched]
+            sections.append("Fee Payment Schedule:\n" + "\n".join(lines))
+
+    # 4. Banking details if bank/account/pay mentioned
+    if any(k in lower for k in ("bank", "banking", "account", "branch", "pay", "deposit", "fee", "fees")):
+        cursor.execute(
+            "SELECT bank_name, account_name, branch_name, branch_code, account_number, reference_format, contact_email "
+            "FROM banking_details"
+        )
+        banks = [dict(r) for r in cursor.fetchall()]
+        if banks:
+            b = banks[0]
+            sections.append(
+                f"Official NUST Banking Details:\n"
+                f"• Bank: {b['bank_name']} ({b['account_name']})\n"
+                f"• Account Number: {b['account_number']} | Branch Code: {b['branch_code']} ({b['branch_name']})\n"
+                f"• Reference Format: {b['reference_format']} | Proof of Payment: {b['contact_email']}"
+            )
+
+    conn.close()
+    if sections:
+        return {
+            "found": True,
+            "category": "fees_and_residence",
+            "message": "\n\n".join(sections)
+        }
+    return {"found": False, "message": ""}
+
+
+def lookup_programme_info(query: str) -> Dict[str, Any]:
+    """
+    Looks up degree/diploma programmes, NQF levels, minimum points, and admission point scales.
+    """
+    lower = query.lower()
+    conn = get_db_connection()
+    cursor = conn.cursor()
+
+    prog_keywords = [
+        "programme", "program", "degree", "diploma", "bachelor", "honours", "master",
+        "phd", "admission point", "minimum point", "nqf", "07b", "08b", "06d",
+        "computer science", "informatics", "cyber", "journalism", "engineering",
+        "architecture", "accounting", "economics", "logistics", "marketing", "agriculture"
+    ]
+    if not any(k in lower for k in prog_keywords):
+        conn.close()
+        return {"found": False, "message": ""}
+
+    cursor.execute(
+        "SELECT programme_code, programme_name, faculty, nqf_level, duration_years, minimum_points, admission_requirements "
+        "FROM programmes"
+    )
+    all_progs = [dict(r) for r in cursor.fetchall()]
+    matched = [
+        p for p in all_progs
+        if p["programme_code"].lower() in lower
+        or any(w in lower for w in p["programme_name"].lower().split() if len(w) > 4 and w not in ("bachelor", "honours", "diploma", "master", "science", "technology"))
+    ]
+
+    if not matched and any(k in lower for k in ("programme", "program", "degree", "minimum point", "admission")):
+        matched = all_progs[:6]
+
+    conn.close()
+    if matched:
+        lines = [
+            f"• {p['programme_code']} — {p['programme_name']} ({p['faculty']}):\n"
+            f"  NQF Level: {p['nqf_level']} | Duration: {p['duration_years']} yrs | "
+            f"Min Points: {p['minimum_points']} | Requirements: {p['admission_requirements']}"
+            for p in matched[:6]
+        ]
+        return {
+            "found": True,
+            "category": "programmes",
+            "programmes": matched[:6],
+            "message": "Official NUST Programme & Admission Details:\n" + "\n".join(lines)
+        }
+    return {"found": False, "message": ""}
+
+
+def lookup_student_societies(query: str) -> Dict[str, Any]:
+    """Looks up registered student societies, clubs, and cultural organizations."""
+    lower = query.lower()
+    if not any(k in lower for k in ("society", "societies", "club", "clubs", "choir", "chess", "red cross", "extramural")):
+        return {"found": False, "message": ""}
+
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    cursor.execute("SELECT society_name, category, description, contact_email FROM student_societies")
+    rows = [dict(r) for r in cursor.fetchall()]
+    conn.close()
+
+    if rows:
+        lines = [
+            f"• {r['society_name']} ({r['category']}): {r['description']}"
+            + (f" | Email: {r['contact_email']}" if r.get("contact_email") else "")
+            for r in rows
+        ]
+        return {
+            "found": True,
+            "category": "student_societies",
+            "societies": rows,
+            "message": "Registered NUST Student Societies & Clubs:\n" + "\n".join(lines)
+        }
+    return {"found": False, "message": ""}
+
+
+def lookup_structured_facts(query: str) -> Dict[str, Any]:
+    """
+    Unified check across additional structured SQLite tables (fees, residence,
+    banking, programmes, student societies) to supplement RAG and fallback routing.
+    """
+    for lookup_fn in (lookup_fees_and_residence, lookup_programme_info, lookup_student_societies):
+        res = lookup_fn(query)
+        if res.get("found"):
+            return res
+    return {"found": False, "message": ""}
+

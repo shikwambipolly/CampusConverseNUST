@@ -1,18 +1,19 @@
 """
-api.py
-======
+src/api.py
+==========
 Purpose:
     FastAPI service running on Cloud Run to serve the Chatbot frontend
     and external API requests.
 """
 
 import os
+from typing import Optional
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
-from chatbot_agent import CampusConverseAgent
+from src.orchestrator import process_query
 
-app = FastAPI(title="CampusConverse API", version="1.0.0")
+app = FastAPI(title="CampusConverse API", version="2.0.0")
 
 # Enable CORS for web frontend clients
 app.add_middleware(
@@ -23,9 +24,6 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Initialize agent once on startup
-agent = CampusConverseAgent()
-
 
 class ChatRequest(BaseModel):
     message: str
@@ -35,6 +33,9 @@ class ChatRequest(BaseModel):
 class ChatResponse(BaseModel):
     reply: str
     status: str = "success"
+    intent: Optional[str] = None
+    confidence: Optional[float] = None
+    language: Optional[str] = None
 
 
 @app.get("/health")
@@ -46,15 +47,24 @@ def health_check():
 @app.post("/api/chat", response_model=ChatResponse)
 def chat_endpoint(request: ChatRequest):
     """
-    Main endpoint for student interactions. Passes the query to the
-    Agentic LLM which invokes MCP tools for Chroma & AlloyDB.
+    Unified endpoint for student interactions. Routes queries through:
+    1. Preprocessing, Language Detection (en/af/kj), and Safety Guardrails
+    2. Multi-turn Dialogue FSM & Calibrated LinearSVC Intent Router
+    3. Deterministic SQLite/AlloyDB Lookups + 3-Way Hybrid RAG (Chroma + BM25 + TF-IDF)
+    4. Grounded Gemini LLM Synthesis (when GEMINI_API_KEY is configured)
     """
     if not request.message.strip():
         raise HTTPException(status_code=400, detail="Message cannot be empty.")
 
     try:
-        reply_text = agent.answer_question(request.message)
-        return ChatResponse(reply=reply_text)
+        result = process_query(request.message, session_id=request.user_id)
+        return ChatResponse(
+            reply=result["response"],
+            status=result["status"],
+            intent=result["intent"],
+            confidence=result["confidence"],
+            language=result["language"]
+        )
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
@@ -62,4 +72,4 @@ def chat_endpoint(request: ChatRequest):
 if __name__ == "__main__":
     import uvicorn
     port = int(os.getenv("PORT", "8080"))
-    uvicorn.run("api:app", host="0.0.0.0", port=port)
+    uvicorn.run("src.api:app", host="0.0.0.0", port=port)

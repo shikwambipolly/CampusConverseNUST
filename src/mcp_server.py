@@ -1,17 +1,17 @@
 """
-mcp_server.py
-=============
+src/mcp_server.py
+=================
 Purpose:
     Implements a Model Context Protocol (MCP) server using FastMCP.
     Exposes semantic retrieval tools for Chroma (unstructured RAG) and
-    AlloyDB (structured deterministic tables).
+    AlloyDB / SQLite (structured deterministic tables).
     Runs as a standalone microservice on Cloud Run (via SSE or HTTP transport).
 """
 
 import os
 from typing import Optional
 from fastmcp import FastMCP
-from semantic_layer import SemanticLayer
+from src.semantic_layer import SemanticLayer
 
 # 1. Initialize FastMCP server with name
 # FastMCP automatically generates JSON Schema parameter definitions from type hints
@@ -106,25 +106,63 @@ def lookup_academic_calendar(event_keyword: str) -> str:
 
 
 # ============================================================================
-# Tool 4: Fee Structure Lookup (AlloyDB)
+# Tool 4: Fee Structure, Residence Fees & Banking Lookup (AlloyDB / SQLite)
 # ============================================================================
 @mcp.tool()
 def lookup_fees(fee_category_or_name: str) -> str:
     """
     Look up official administrative rates, registration fees, late penalties,
-    breakage deposits, and hostel fees in AlloyDB.
+    breakage deposits, hostel residence fees, payment schedules, and banking details.
 
     Args:
         fee_category_or_name: Fee type or name (e.g. 'registration', 'hostel', 'penalty', 'remark').
     """
-    fees = semantic_layer.get_fee_breakdown(fee_category_or_name)
-    if not fees:
+    breakdown = semantic_layer.get_fee_breakdown(fee_category_or_name)
+    if not breakdown:
         return f"No fee information found for category: '{fee_category_or_name}'."
 
-    output = ["Official Fee Rates:"]
-    for f in fees:
+    output = ["Official NUST Fee & Payment Breakdown:"]
+    for f in breakdown.get("general_fees", []):
         notes = f" | Notes: {f['notes']}" if f.get("notes") else ""
         output.append(f"- {f['fee_name']} ({f['fee_category']}): N$ {f['amount_nad']} ({f['frequency']}){notes}")
+
+    if breakdown.get("residence_fees"):
+        output.append("\nHostel & Residence Fees:")
+        for r in breakdown["residence_fees"]:
+            output.append(f"- {r['item_name']} ({r['category']}): N$ {r['amount_nad']} ({r['period']})")
+
+    if breakdown.get("banking_details"):
+        b = breakdown["banking_details"][0]
+        output.append(
+            f"\nBanking Details: {b['bank_name']} | Account: {b['account_number']} "
+            f"(Branch Code: {b['branch_code']}) | Ref: {b['reference_format']}"
+        )
+    return "\n".join(output)
+
+
+# ============================================================================
+# Tool 5: Programme & Admission Requirements Lookup (AlloyDB / SQLite)
+# ============================================================================
+@mcp.tool()
+def lookup_programmes(keyword: str) -> str:
+    """
+    Search NUST undergraduate and postgraduate programmes, NQF levels,
+    duration, and minimum admission points.
+
+    Args:
+        keyword: Programme name, code, or faculty (e.g. 'Computer Science', '07BCMS', 'Engineering').
+    """
+    progs = semantic_layer.search_programmes(keyword)
+    if not progs:
+        return f"No programmes found matching '{keyword}'."
+
+    output = ["Official NUST Programmes:"]
+    for p in progs:
+        output.append(
+            f"- {p['programme_code']}: {p['programme_name']} ({p['faculty']}) | "
+            f"NQF Level {p['nqf_level']} | {p['duration_years']} yrs | Min Points: {p['minimum_points']} | "
+            f"Requirements: {p['admission_requirements']}"
+        )
     return "\n".join(output)
 
 
