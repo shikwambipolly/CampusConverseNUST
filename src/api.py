@@ -11,7 +11,8 @@ from typing import Optional
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
-from src.orchestrator import process_query
+from src.orchestrator import process_query, clear_session
+from src.chatbot_agent import get_chatbot_agent
 
 app = FastAPI(title="CampusConverse API", version="2.0.0")
 
@@ -38,10 +39,30 @@ class ChatResponse(BaseModel):
     language: Optional[str] = None
 
 
+class ResetRequest(BaseModel):
+    user_id: str = "guest_student"
+
+
 @app.get("/health")
 def health_check():
-    """Liveness probe for Cloud Run."""
-    return {"status": "healthy"}
+    """Liveness and stack status probe."""
+    llm_info = get_chatbot_agent().get_active_llm_info()
+    use_postgres = os.getenv("USE_ALLOYDB", "false").lower() == "true"
+    use_remote_chroma = os.getenv("USE_REMOTE_CHROMA", "false").lower() == "true"
+    return {
+        "status": "healthy",
+        "llm_provider": llm_info["provider"],
+        "llm_model": llm_info["model"],
+        "database": "postgresql" if use_postgres else "sqlite",
+        "vector_store": "chromadb-remote" if use_remote_chroma else "chromadb-embedded",
+    }
+
+
+@app.post("/api/reset")
+def reset_session_endpoint(request: ResetRequest):
+    """Clears multi-turn conversation memory for the specified user session."""
+    clear_session(request.user_id)
+    return {"status": "cleared", "user_id": request.user_id}
 
 
 @app.post("/api/chat", response_model=ChatResponse)

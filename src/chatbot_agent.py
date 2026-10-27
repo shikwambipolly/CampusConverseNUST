@@ -9,19 +9,24 @@ Purpose:
 
 import os
 import json
+import urllib.request
 from typing import List, Dict, Any
 from dotenv import load_dotenv
 
 # Automatically load environment variables from .env file (e.g., GEMINI_API_KEY)
 load_dotenv()
 
-# Using Google Gemini (or OpenAI / Anthropic) for the LLM
+# Using Google Gemini or open-source Ollama for LLM synthesis
 import google.generativeai as genai
 from src.semantic_layer import get_semantic_layer
 
-# Configure Gemini API key from environment variable (populated by .env or OS)
+# Configure LLM settings from environment variables
+LLM_PROVIDER = os.getenv("LLM_PROVIDER", "auto").strip().lower()
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY", "").strip()
 GEMINI_MODEL = os.getenv("GEMINI_MODEL", "gemini-3.5-flash-lite")
+OLLAMA_BASE_URL = os.getenv("OLLAMA_BASE_URL", "http://localhost:11434").strip().rstrip("/")
+OLLAMA_MODEL = os.getenv("OLLAMA_MODEL", "llama3.2:3b").strip()
+
 if GEMINI_API_KEY:
     genai.configure(api_key=GEMINI_API_KEY, transport="rest")
 
@@ -103,33 +108,92 @@ class CampusConverseAgent:
     # -------------------------------------------------------------------------
     # Grounded Synthesis & Chat Execution
     # -------------------------------------------------------------------------
+    def get_active_llm_info(self) -> Dict[str, str]:
+        """Return active LLM provider and model name for health/status reporting."""
+        provider = os.getenv("LLM_PROVIDER", "auto").strip().lower()
+        api_key = os.getenv("GEMINI_API_KEY", "").strip()
+        ollama_url = os.getenv("OLLAMA_BASE_URL", "").strip()
+
+        if provider == "offline":
+            return {"provider": "offline-deterministic", "model": "hybrid-rag-direct"}
+        if provider == "ollama" or (provider == "auto" and ollama_url and not api_key):
+            return {
+                "provider": "ollama",
+                "model": os.getenv("OLLAMA_MODEL", OLLAMA_MODEL),
+            }
+        if provider in ("gemini", "auto") and api_key:
+            return {
+                "provider": "gemini",
+                "model": os.getenv("GEMINI_MODEL", GEMINI_MODEL),
+            }
+        return {"provider": "offline-deterministic", "model": "hybrid-rag-direct"}
+
+    def _synthesize_with_ollama(self, prompt: str) -> str:
+        """Call open-source local/Docker Ollama container (/api/generate)."""
+        base_url = os.getenv("OLLAMA_BASE_URL", OLLAMA_BASE_URL).strip().rstrip("/")
+        model = os.getenv("OLLAMA_MODEL", OLLAMA_MODEL).strip()
+        payload = json.dumps({
+            "model": model,
+            "system": self.system_instruction,
+            "prompt": prompt,
+            "stream": False,
+            "options": {"temperature": 0.1},
+        }).encode("utf-8")
+
+        req = urllib.request.Request(
+            f"{base_url}/api/generate",
+            data=payload,
+            headers={"Content-Type": "application/json"},
+            method="POST",
+        )
+        with urllib.request.urlopen(req, timeout=20) as response:
+            data = json.loads(response.read().decode("utf-8"))
+            return (data.get("response") or "").strip()
+
     def synthesize_with_context(self, user_message: str, retrieved_context: str) -> str:
         """
-        If GEMINI_API_KEY is configured, synthesizes a clear conversational answer
-        from the deterministic & hybrid RAG context while preserving citations.
-        Falls back to the deterministic/cited context when offline or without an API key.
+        Synthesizes a clear conversational answer from the deterministic & hybrid RAG
+        context while preserving citations. Supports:
+        - Open-source Ollama (LLM_PROVIDER=ollama)
+        - Google Gemini API (LLM_PROVIDER=gemini or auto with GEMINI_API_KEY)
+        - Offline deterministic mode (LLM_PROVIDER=offline or fallback)
         """
-        api_key = os.getenv("GEMINI_API_KEY", "").strip()
-        if not api_key:
+        provider = os.getenv("LLM_PROVIDER", "auto").strip().lower()
+        if provider == "offline":
             return retrieved_context
 
-        try:
-            genai.configure(api_key=api_key, transport="rest")
-            synth_model = genai.GenerativeModel(
-                model_name=os.getenv("GEMINI_MODEL", "gemini-3.5-flash-lite"),
-                system_instruction=self.system_instruction
-            )
-            prompt = (
-                f"Student Question: {user_message}\n\n"
-                f"Retrieved Official NUST Context:\n{retrieved_context}\n\n"
-                "Please provide a clear, helpful answer based strictly on the Retrieved Official NUST Context above. "
-                "Keep all [Source: ... | Section: ... | Page: ...] citations intact at the end of your response."
-            )
-            resp = synth_model.generate_content(prompt)
-            if resp and resp.text:
-                return resp.text.strip()
-        except Exception:
-            pass
+        prompt = (
+            f"Student Question: {user_message}\n\n"
+            f"Retrieved Official NUST Context:\n{retrieved_context}\n\n"
+            "Please provide a clear, helpful answer based strictly on the Retrieved Official NUST Context above. "
+            "Keep all [Source: ... | Section: ... | Page: ...] citations intact at the end of your response."
+        )
+
+        api_key = os.getenv("GEMINI_API_KEY", "").strip()
+        ollama_url = os.getenv("OLLAMA_BASE_URL", "").strip()
+
+        # 1. Open-Source Ollama Synthesis
+        if provider == "ollama" or (provider == "auto" and ollama_url and not api_key):
+            try:
+                reply = self._synthesize_with_ollama(prompt)
+                if reply:
+                    return reply
+            except Exception:
+                pass
+
+        # 2. Google Gemini API Synthesis
+        if provider in ("gemini", "auto") and api_key:
+            try:
+                genai.configure(api_key=api_key, transport="rest")
+                synth_model = genai.GenerativeModel(
+                    model_name=os.getenv("GEMINI_MODEL", "gemini-3.5-flash-lite"),
+                    system_instruction=self.system_instruction
+                )
+                resp = synth_model.generate_content(prompt)
+                if resp and resp.text:
+                    return resp.text.strip()
+            except Exception:
+                pass
 
         return retrieved_context
 
