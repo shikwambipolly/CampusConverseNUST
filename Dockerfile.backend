@@ -1,0 +1,50 @@
+# =============================================================================
+# Dockerfile.backend — CampusConverse NUST Backend Image
+# =============================================================================
+# Packages:
+#   - FastAPI server (src/api.py) + Unified Orchestrator (src/orchestrator.py)
+#   - Calibrated LinearSVC Intent Classifier (models/intent_classifier.joblib)
+#   - Embedded SQLite DB (data/nust_facts.db) + PostgreSQL/AlloyDB client
+#   - 3-Way Hybrid RAG (ChromaDB + BM25 + TF-IDF) with all-MiniLM-L6-v2 cached
+# =============================================================================
+
+FROM python:3.11-slim
+
+ENV PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1 \
+    PIP_NO_CACHE_DIR=1 \
+    PORT=8080 \
+    HF_HOME=/app/.cache/huggingface
+
+WORKDIR /app
+
+# Install system dependencies required for building/running scientific packages
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    build-essential \
+    curl \
+    && rm -rf /var/lib/apt/lists/*
+
+# Install Python dependencies first for optimal Docker layer caching
+COPY requirements.txt .
+RUN pip install --upgrade pip && pip install -r requirements.txt
+
+# Pre-download HuggingFace embedding model (all-MiniLM-L6-v2) into image layer
+# so container startup is fast and works 100% offline
+RUN python -c "from sentence_transformers import SentenceTransformer; SentenceTransformer('all-MiniLM-L6-v2')"
+
+# Copy application source, trained models, and structured/chunked NUST data
+COPY src/ ./src/
+COPY scripts/ ./scripts/
+COPY models/ ./models/
+COPY data/ ./data/
+COPY raw_data/manifest.json ./raw_data/manifest.json
+
+# Build the persistent ChromaDB vector index during image build so the image is ready-to-run
+RUN python scripts/index_chroma.py
+
+EXPOSE 8080
+
+HEALTHCHECK --interval=15s --timeout=5s --start-period=20s --retries=3 \
+    CMD curl -f http://localhost:8080/health || exit 1
+
+CMD ["uvicorn", "src.api:app", "--host", "0.0.0.0", "--port", "8080"]

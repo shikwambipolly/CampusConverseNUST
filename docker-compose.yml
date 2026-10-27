@@ -1,0 +1,75 @@
+services:
+  # ===========================================================================
+  # Image 1: CampusConverse Backend (FastAPI + 3-Way Hybrid RAG + SQLite/PG)
+  # ===========================================================================
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile.backend
+    image: campusconverse-backend:latest
+    container_name: campusconverse-backend
+    ports:
+      - "8080:8080"
+    environment:
+      - PORT=8080
+      # LLM_PROVIDER options: "auto" | "gemini" | "ollama" | "offline"
+      - LLM_PROVIDER=${LLM_PROVIDER:-auto}
+      - GEMINI_API_KEY=${GEMINI_API_KEY:-}
+      - GEMINI_MODEL=${GEMINI_MODEL:-gemini-3.5-flash-lite}
+      - OLLAMA_BASE_URL=${OLLAMA_BASE_URL:-http://ollama:11434}
+      - OLLAMA_MODEL=${OLLAMA_MODEL:-llama3.2:3b}
+      # Database options: SQLite by default; set USE_ALLOYDB=true for PostgreSQL
+      - USE_ALLOYDB=${USE_ALLOYDB:-false}
+      - ALLOYDB_HOST=${ALLOYDB_HOST:-postgres}
+      - ALLOYDB_PORT=${ALLOYDB_PORT:-5432}
+      - ALLOYDB_DATABASE=${ALLOYDB_DATABASE:-nust_campus_db}
+      - ALLOYDB_USER=${ALLOYDB_USER:-postgres}
+      - ALLOYDB_PASSWORD=${ALLOYDB_PASSWORD:-postgres}
+    restart: unless-stopped
+
+  # ===========================================================================
+  # Image 2: CampusConverse Frontend (React + TypeScript + Nginx Reverse Proxy)
+  # ===========================================================================
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    image: campusconverse-frontend:latest
+    container_name: campusconverse-frontend
+    ports:
+      - "3000:80"
+    depends_on:
+      - backend
+    restart: unless-stopped
+
+  # ===========================================================================
+  # Optional Open-Source Stack Services (--profile opensource)
+  # Run with: docker compose --profile opensource up --build
+  # ===========================================================================
+  ollama:
+    image: ollama/ollama:latest
+    container_name: campusconverse-ollama
+    profiles: ["opensource"]
+    ports:
+      - "11434:11434"
+    volumes:
+      - ollama_data:/root/.ollama
+    restart: unless-stopped
+
+  postgres:
+    image: postgres:16-alpine
+    container_name: campusconverse-postgres
+    profiles: ["opensource"]
+    ports:
+      - "5432:5432"
+    environment:
+      - POSTGRES_DB=${ALLOYDB_DATABASE:-nust_campus_db}
+      - POSTGRES_USER=${ALLOYDB_USER:-postgres}
+      - POSTGRES_PASSWORD=${ALLOYDB_PASSWORD:-postgres}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    restart: unless-stopped
+
+volumes:
+  ollama_data:
+  postgres_data:

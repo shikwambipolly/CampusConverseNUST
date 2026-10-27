@@ -1,0 +1,26 @@
+# Virtual environments & Node dependencies
+.venv/
+venv/
+env/
+frontend/node_modules/
+frontend/dist/
+
+# Git & IDE metadata
+.git/
+.gitignore
+.DS_Store
+
+# Python caches
+__pycache__/
+*.py[cod]
+*$py.class
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Large raw PDFs (chunks & SQLite DB are already extracted in data/)
+raw_data/*.pdf
+
+# Local secrets
+.env
+notes.txt
