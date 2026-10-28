@@ -10,11 +10,12 @@ import {
   ShieldCheck,
   Clock,
   FileText,
-  GraduationCap,
   Layers,
   ChevronRight,
   Menu,
   X,
+  Sun,
+  Moon,
 } from 'lucide-react';
 import { ChatMessage, HealthStatus, SamplePrompt } from './types';
 import {
@@ -24,44 +25,42 @@ import {
   extractCitations,
 } from './api';
 
+const NUST_LOGO_URL =
+  'https://images.seeklogo.com/logo-png/36/1/namibia-university-of-science-and-technology-logo-png_seeklogo-360137.png';
+
 const SAMPLE_PROMPTS: SamplePrompt[] = [
   {
     category: 'Fees & Finance',
     title: 'Registration & Hostel Fees',
     query: 'How much is the registration fee and hostel deposit at NUST?',
-    tag: 'SQLite / AlloyDB + RAG',
   },
   {
     category: 'Course Prerequisites',
     title: 'Module Prerequisite Lookup',
     query: 'What are the prerequisites and NQF credits for PRG510S?',
-    tag: 'Deterministic SQL',
   },
   {
-    category: 'Multi-Intent Query',
+    category: 'Admissions & Programmes',
     title: 'Admissions + Tuition Combined',
     query:
       'What are the undergraduate admission requirements and how much is the registration fee?',
-    tag: 'Multi-Intent Router',
   },
   {
     category: 'Academic Calendar',
     title: 'Semester & Exam Dates',
     query: 'When does the first semester start and when are examinations?',
-    tag: 'Calendar Tool',
   },
   {
     category: 'Academic Regulations',
     title: 'Attendance & Pass Mark Rules',
     query:
       'What is the minimum lecture attendance percentage required to write exams at NUST?',
-    tag: '3-Way Hybrid RAG',
   },
   {
     category: 'Multilingual (Oshiwambo & Afrikaans)',
     title: 'Waapenduka / Goeie môre Greeting',
-    query: 'Waapenduka! Ongeipi? Tell me about NUST computer science programmes.',
-    tag: 'Multilingual NLP',
+    query:
+      'Waapenduka! Ongeipi? Tell me about NUST computer science programmes.',
   },
 ];
 
@@ -125,6 +124,16 @@ export default function App() {
     return generated;
   });
 
+  const [theme, setTheme] = useState<'light' | 'dark'>(() => {
+    const saved = localStorage.getItem('nust_chat_theme');
+    return saved === 'dark' ? 'dark' : 'light';
+  });
+
+  useEffect(() => {
+    localStorage.setItem('nust_chat_theme', theme);
+    document.documentElement.setAttribute('data-theme', theme);
+  }, [theme]);
+
   const [messages, setMessages] = useState<ChatMessage[]>([
     {
       id: 'welcome-0',
@@ -134,7 +143,7 @@ export default function App() {
         'I can help you with:\n' +
         '- **Admissions & Programmes** (NQF levels, minimum points, faculties)\n' +
         '- **Tuition, Hostel & Banking Details** (verified fee tables & discounts)\n' +
-        '- **Module Prerequisites** (e.g., `PRG510S`, `DSA611S`, `ankara` codes)\n' +
+        '- **Module Prerequisites** (e.g., `PRG510S`, `DSA611S`, `CSA511S`)\n' +
         '- **Academic Calendar & Exam Regulations** (grounded with official PDF citations)\n\n' +
         'Feel free to greet me in **English**, **Oshiwambo**, **Afrikaans**, or **German**!',
       timestamp: new Date().toLocaleTimeString([], {
@@ -217,7 +226,7 @@ export default function App() {
         role: 'assistant',
         content:
           `Unable to reach the CampusConverse backend service. ` +
-          `Please ensure the backend container is running on port 8080.\n\n` +
+          `Please ensure the backend container is running.\n\n` +
           `Details: \`${err?.message || 'Connection error'}\``,
         timestamp: new Date().toLocaleTimeString([], {
           hour: '2-digit',
@@ -247,8 +256,12 @@ export default function App() {
     }
   };
 
+  const toggleTheme = () => {
+    setTheme((prev) => (prev === 'light' ? 'dark' : 'light'));
+  };
+
   return (
-    <div className="app-shell">
+    <div className="app-shell" data-theme={theme}>
       {/* Mobile Overlay */}
       {sidebarOpen && (
         <div
@@ -261,7 +274,11 @@ export default function App() {
       <aside className={`sidebar ${sidebarOpen ? 'open' : ''}`}>
         <div className="sidebar-header">
           <div className="brand-badge">
-            <GraduationCap size={24} className="brand-icon" />
+            <img
+              src={NUST_LOGO_URL}
+              alt="NUST Logo"
+              className="brand-logo-img"
+            />
           </div>
           <div className="brand-titles">
             <h1>CampusConverse</h1>
@@ -337,7 +354,6 @@ export default function App() {
               >
                 <div className="prompt-card-top">
                   <span className="prompt-category">{item.category}</span>
-                  <span className="prompt-tag">{item.tag}</span>
                 </div>
                 <div className="prompt-title">
                   <span>{item.title}</span>
@@ -377,15 +393,33 @@ export default function App() {
             <div>
               <h2>Namibia University of Science and Technology</h2>
               <p>
-                Unified 3-Way Hybrid RAG • Calibrated Intent Router • Verified
-                Policy Citations
+                Official AI Student Support • Admissions, Fees, Prerequisites &
+                Academic Policies
               </p>
             </div>
           </div>
           <div className="topbar-right">
             <span className="guardrail-pill">
-              <ShieldCheck size={14} /> PII & Safety Guardrails Active
+              <ShieldCheck size={14} /> Safety Guardrails Active
             </span>
+            <button
+              className="theme-toggle-btn"
+              onClick={toggleTheme}
+              aria-label={`Switch to ${theme === 'light' ? 'dark' : 'light'} mode`}
+              title={`Switch to ${theme === 'light' ? 'dark' : 'light'} mode`}
+            >
+              {theme === 'light' ? (
+                <>
+                  <Moon size={16} />
+                  <span>Dark</span>
+                </>
+              ) : (
+                <>
+                  <Sun size={16} />
+                  <span>Light</span>
+                </>
+              )}
+            </button>
           </div>
         </header>
 
@@ -400,7 +434,11 @@ export default function App() {
               <div key={msg.id} className={`message-row ${msg.role}`}>
                 <div className="message-avatar">
                   {msg.role === 'assistant' ? (
-                    <GraduationCap size={20} />
+                    <img
+                      src={NUST_LOGO_URL}
+                      alt="NUST"
+                      className="avatar-logo-img"
+                    />
                   ) : (
                     <span>YOU</span>
                   )}
@@ -478,7 +516,11 @@ export default function App() {
           {isLoading && (
             <div className="message-row assistant">
               <div className="message-avatar">
-                <GraduationCap size={20} />
+                <img
+                  src={NUST_LOGO_URL}
+                  alt="NUST"
+                  className="avatar-logo-img"
+                />
               </div>
               <div className="message-bubble assistant loading-bubble">
                 <div className="typing-dots">
@@ -487,7 +529,7 @@ export default function App() {
                   <span />
                 </div>
                 <span className="loading-text">
-                  Querying NUST SQLite/AlloyDB & 3-Way Hybrid RAG...
+                  Searching NUST records & handbooks...
                 </span>
               </div>
             </div>

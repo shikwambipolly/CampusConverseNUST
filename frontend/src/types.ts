@@ -37,5 +37,4 @@ export interface SamplePrompt {
   category: string;
   title: string;
   query: string;
-  tag: string;
 }
