@@ -25,8 +25,11 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     && rm -rf /var/lib/apt/lists/*
 
 # Install Python dependencies first for optimal Docker layer caching
+# Install CPU-only PyTorch first to keep the image lightweight and fast to build
 COPY requirements.txt .
-RUN pip install --upgrade pip && pip install -r requirements.txt
+RUN pip install --upgrade pip && \
+    pip install torch --index-url https://download.pytorch.org/whl/cpu && \
+    pip install -r requirements.txt
 
 # Pre-download HuggingFace embedding model (all-MiniLM-L6-v2) into image layer
 # so container startup is fast and works 100% offline
