@@ -80,19 +80,32 @@ CampusConverse is engineered with a modular, container-native architecture where
 
 ## One-Command Docker Quickstart (Recommended)
 
-The entire system is packaged into **two separate Docker images** (`campusconverse-backend` and `campusconverse-frontend`) orchestrated via `docker-compose.yml`.
+The entire system is packaged into **two separate Docker images** (`ghcr.io/shikwambipolly/campusconverse-backend` and `ghcr.io/shikwambipolly/campusconverse-frontend`) orchestrated via `docker-compose.yml`.
 
-### 1. Run with One Command (Default Self-Contained Mode)
+### Option A — Run Pre-Built Images Without Cloning the Repo (Zero-Clone 1-Liner)
+Once the images are published via the **Build & Publish Docker Images (GHCR)** GitHub Action, anyone with Docker installed can run the entire stack without cloning the repository:
+```bash
+curl -sSL https://raw.githubusercontent.com/shikwambipolly/CampusConverseNUST/main/docker-compose.yml | docker compose -f - pull && \
+curl -sSL https://raw.githubusercontent.com/shikwambipolly/CampusConverseNUST/main/docker-compose.yml | docker compose -f - up
+```
+
+### Option B — Build & Run Locally From a Cloned Repo
 ```bash
 docker compose up --build
 ```
 * **React + TypeScript Web UI:** Open **`http://localhost:3000`** in your browser.
-* **FastAPI Backend & Swagger Docs:** Available at **`http://localhost:8080/docs`**.
-* **Health & Active Stack Probe:** Available at **`http://localhost:8080/health`**.
+* **FastAPI Backend & Swagger Docs:** Available at **`http://localhost:8000/docs`** (configurable via `BACKEND_PORT`).
+* **Health & Active Stack Probe:** Available at **`http://localhost:8000/health`**.
 
 *(Optional: If you want Google Gemini synthesis enabled in Docker, export `GEMINI_API_KEY="your-key"` or add it to `.env` before running `docker compose up --build`. Without an API key, it runs 100% offline using deterministic SQL + cited 3-Way Hybrid RAG).*
 
-### 2. Run with the 100% Open-Source LLM & PostgreSQL Stack (`--profile opensource`)
+### Option C — Publish Updated Images to GitHub Container Registry (`ghcr.io`)
+Image publishing is configured as a **manual GitHub Action** (`.github/workflows/docker-publish.yml`):
+1. Go to the repository on GitHub $\rightarrow$ **Actions** tab.
+2. Select **Build & Publish Docker Images (GHCR)** on the left.
+3. Click **Run workflow** (choose branch `main` and tag `latest`).
+
+### Option D — Run with the 100% Open-Source LLM & PostgreSQL Stack (`--profile opensource`)
 To spin up the open-source **Ollama** local LLM server (`ollama/ollama`) and **PostgreSQL 16** (`postgres:16-alpine`) alongside the UI and backend:
 ```bash
 LLM_PROVIDER=ollama docker compose --profile opensource up --build -d

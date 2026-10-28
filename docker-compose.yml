@@ -6,7 +6,7 @@ services:
     build:
       context: .
       dockerfile: Dockerfile.backend
-    image: campusconverse-backend:latest
+    image: ghcr.io/shikwambipolly/campusconverse-backend:latest
     container_name: campusconverse-backend
     ports:
       - "${BACKEND_PORT:-8000}:8080"
@@ -34,7 +34,7 @@ services:
     build:
       context: ./frontend
       dockerfile: Dockerfile
-    image: campusconverse-frontend:latest
+    image: ghcr.io/shikwambipolly/campusconverse-frontend:latest
     container_name: campusconverse-frontend
     ports:
       - "3000:80"
