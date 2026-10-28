@@ -11,7 +11,8 @@ from typing import Optional
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
-from src.orchestrator import process_query, clear_session
+from src.orchestrator import process_query
+from src.dialogue import get_dialogue_manager
 from src.chatbot_agent import get_chatbot_agent
 
 app = FastAPI(title="CampusConverse API", version="2.0.0")
@@ -61,7 +62,10 @@ def health_check():
 @app.post("/api/reset")
 def reset_session_endpoint(request: ResetRequest):
     """Clears multi-turn conversation memory for the specified user session."""
-    clear_session(request.user_id)
+    manager = get_dialogue_manager()
+    session = manager.get_or_create_session(request.user_id)
+    session.reset()
+    session.history.clear()
     return {"status": "cleared", "user_id": request.user_id}
 
 

@@ -24,3 +24,9 @@ raw_data/*.pdf
 .pytest_cache/
 .coverage
 htmlcov/
+
+# Frontend build & dependencies
+node_modules/
+dist/
+*.tsbuildinfo
+notes.txt
